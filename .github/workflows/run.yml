@@ -2,22 +2,43 @@ name: YouTube Shorts Automation
 
 on:
   schedule:
+    # Runs 3 times every day (UTC time)
     - cron: "0 9 * * *"
     - cron: "0 15 * * *"
     - cron: "0 21 * * *"
+
+  # Allows manual run from GitHub UI
   workflow_dispatch:
 
 jobs:
-  build:
+  automate:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - name: Test run
-        run: echo "Automation is running"
+      - name: Install dependencies
+        run: |
+          pip install requests moviepy
+
+      - name: Run script generator
+        run: |
+          echo "Running script generator"
+          python script.py
+
+      - name: Download stock videos
+        run: |
+          echo "Downloading stock footage"
+          python download_stock.py
+
+      - name: Build video (placeholder)
+        run: |
+          echo "Video assembly step will be added next"
+
+      - name: Upload to YouTube
