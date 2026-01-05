@@ -5,7 +5,6 @@ on:
     - cron: "0 9 * * *"
     - cron: "0 15 * * *"
     - cron: "0 21 * * *"
-
   workflow_dispatch:
 
 jobs:
@@ -24,14 +23,11 @@ jobs:
       - name: Install dependencies
         run: pip install requests moviepy
 
-      - name: Run script generator
+      - name: Generate script
         run: python script.py
 
-      - name: Download stock videos
-        run: python download_stock.py
-
-      - name: Placeholder build step
-        run: echo "Video build step coming next"
-
-      - name: Placeholder upload step
-        run: echo "Upload step coming later"
+      - name: Upload script as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-script
+          path: script.txt
