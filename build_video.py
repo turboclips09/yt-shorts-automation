@@ -11,7 +11,7 @@ for file in sorted(os.listdir("clips")):
     if file.endswith(".mp4"):
         clip = VideoFileClip(os.path.join("clips", file))
 
-        # Apply resize + center crop using MoviePy v2 effects
+        # Resize + center crop (MoviePy v2)
         clip = clip.with_effects([
             Resize(height=1920),
             Crop(
@@ -27,8 +27,8 @@ for file in sorted(os.listdir("clips")):
 # Concatenate clips
 final_video = concatenate_videoclips(clips, method="compose")
 
-# Trim video to match audio duration
-final_video = final_video.subclip(0, audio.duration)
+# Trim video to match audio duration (MoviePy v2)
+final_video = final_video.subclipped(0, audio.duration)
 
 # Attach audio
 final_video = final_video.with_audio(audio)
