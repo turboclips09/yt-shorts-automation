@@ -1,23 +1,19 @@
 import asyncio
 import edge_tts
 
-VOICE = "en-US-GuyNeural"  # energetic, natural
-RATE = "+10%"               # slightly faster = more energy
-VOLUME = "+0%"
+TEXT = open("script.txt", "r", encoding="utf-8").read()
 
 async def main():
-    with open("script.txt", "r", encoding="utf-8") as f:
-        text = f.read()
-
     communicate = edge_tts.Communicate(
-        text=text,
-        voice=VOICE,
-        rate=RATE,
-        volume=VOLUME
+        TEXT,
+        voice="en-US-GuyNeural",
+        rate="+6%",
+        pitch="+2Hz"
     )
 
-    await communicate.save("voice_raw.mp3")
+    await communicate.save(
+        "voice.mp3",
+        word_boundary_path="words.json"
+    )
 
 asyncio.run(main())
-
-print("Natural voice generated")
