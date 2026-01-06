@@ -2,7 +2,7 @@ import asyncio
 import edge_tts
 
 VOICE = "en-US-GuyNeural"  # energetic, natural
-RATE = "+5%"               # slightly faster = more energy
+RATE = "+10%"               # slightly faster = more energy
 VOLUME = "+0%"
 
 async def main():
