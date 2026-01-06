@@ -4,22 +4,26 @@ import math
 import random
 import subprocess as sp
 
-# Load videos
-pixabay_videos = glob.glob("assets/videos/*.mp4")
+# Load video pools
 my_videos = glob.glob("assets/my_videos/*.mp4")
+pixabay_videos = glob.glob("assets/videos/*.mp4")
 
-if len(pixabay_videos) < 10:
-    raise Exception("Not enough Pixabay videos")
+if len(my_videos) < 5:
+    raise Exception("Not enough personal videos in assets/my_videos")
 
-if len(my_videos) == 0:
-    print("⚠️ No personal videos found, using Pixabay only")
+if len(pixabay_videos) < 5:
+    print("⚠️ Few Pixabay videos found, still continuing")
 
 # Get audio duration
 probe = sp.run(
-    ["ffprobe", "-v", "error", "-show_entries",
-     "format=duration", "-of",
-     "default=noprint_wrappers=1:nokey=1", "voice.mp3"],
-    capture_output=True, text=True
+    [
+        "ffprobe", "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        "voice.mp3"
+    ],
+    capture_output=True,
+    text=True
 )
 
 audio_duration = float(probe.stdout.strip())
@@ -27,11 +31,11 @@ audio_duration = float(probe.stdout.strip())
 clip_duration = 1.6
 clips_needed = math.ceil(audio_duration / clip_duration)
 
-# Calculate mix
-my_count = max(1, int(clips_needed * 0.3)) if my_videos else 0
+# Calculate 70/30 split
+my_count = max(1, int(clips_needed * 0.7))
 pixabay_count = clips_needed - my_count
 
-# Select clips
+# Random selection
 random.shuffle(my_videos)
 random.shuffle(pixabay_videos)
 
@@ -53,7 +57,7 @@ for v in selected:
 
 cmd = ["ffmpeg", "-y"]
 
-# Skip first 0.4s to avoid black frames
+# Skip first frames to avoid black flashes
 for v in final_sequence:
     cmd.extend(["-ss", "0.4", "-t", str(clip_duration), "-i", v])
 
@@ -90,4 +94,4 @@ cmd.extend([
 
 subprocess.run(cmd, check=True)
 
-print("✅ Mixed personal + Pixabay visuals created")
+print("✅ Base video created with 70% personal clips / 30% Pixabay")
