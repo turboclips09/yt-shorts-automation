@@ -1,4 +1,4 @@
-from moviepy.editor import AudioFileClip, CompositeAudioClip
+from moviepy import AudioFileClip, CompositeAudioClip
 
 # Load raw voice and background music
 voice = AudioFileClip("voice_raw.mp3")
