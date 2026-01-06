@@ -1,5 +1,5 @@
 from moviepy import AudioFileClip, CompositeAudioClip
-from moviepy.audio.fx import MultiplyVolume
+from moviepy.audio.fx import MultiplyVolume, AudioLoop
 
 # Load raw voice and background music
 voice = AudioFileClip("voice_raw.mp3")
@@ -8,10 +8,10 @@ music = AudioFileClip("assets/bg_music.mp3")
 # Lower background music volume (15%)
 music = music.with_effects([MultiplyVolume(0.15)])
 
-# Loop music to match voice length
-music = music.audio_loop(duration=voice.duration)
+# Loop background music to match voice duration
+music = music.with_effects([AudioLoop(duration=voice.duration)])
 
-# Mix background music and voice
+# Mix voice and background music
 final_audio = CompositeAudioClip([music, voice])
 
 # Export final audio
