@@ -4,17 +4,21 @@ import math
 import random
 import subprocess as sp
 
-# Load video pools
-my_videos = glob.glob("assets/my_videos/*.mp4")
+# =========================
+# LOAD VIDEO POOLS
+# =========================
+my_videos = glob.glob("assets/assets/my_videos/*.mp4")
 pixabay_videos = glob.glob("assets/videos/*.mp4")
 
-if len(my_videos) < 5:
-    raise Exception("Not enough personal videos in assets/my_videos")
+print(f"Found {len(my_videos)} personal videos")
+print(f"Found {len(pixabay_videos)} pixabay videos")
 
-if len(pixabay_videos) < 5:
-    print("⚠️ Few Pixabay videos found, still continuing")
+if len(pixabay_videos) == 0:
+    raise Exception("No Pixabay videos found in assets/videos")
 
-# Get audio duration
+# =========================
+# GET AUDIO DURATION
+# =========================
 probe = sp.run(
     [
         "ffprobe", "-v", "error",
@@ -28,14 +32,25 @@ probe = sp.run(
 
 audio_duration = float(probe.stdout.strip())
 
-clip_duration = 1.6
+# =========================
+# CLIP CALCULATION
+# =========================
+clip_duration = 1.6  # seconds per visual
 clips_needed = math.ceil(audio_duration / clip_duration)
 
-# Calculate 70/30 split
-my_count = max(1, int(clips_needed * 0.7))
+# =========================
+# CALCULATE 70 / 30 MIX
+# =========================
+if len(my_videos) >= 3:
+    my_count = int(clips_needed * 0.7)
+else:
+    my_count = 0
+
 pixabay_count = clips_needed - my_count
 
-# Random selection
+# =========================
+# RANDOM SELECTION
+# =========================
 random.shuffle(my_videos)
 random.shuffle(pixabay_videos)
 
@@ -44,10 +59,10 @@ selected = []
 selected.extend(my_videos[:my_count])
 selected.extend(pixabay_videos[:pixabay_count])
 
-# Shuffle final sequence
+# Shuffle combined list
 random.shuffle(selected)
 
-# Prevent back-to-back duplicates
+# Prevent immediate repeats
 final_sequence = []
 last = None
 for v in selected:
@@ -55,6 +70,9 @@ for v in selected:
         final_sequence.append(v)
         last = v
 
+# =========================
+# BUILD FFMPEG COMMAND
+# =========================
 cmd = ["ffmpeg", "-y"]
 
 # Skip first frames to avoid black flashes
@@ -92,6 +110,9 @@ cmd.extend([
     "base.mp4"
 ])
 
+# =========================
+# RUN
+# =========================
 subprocess.run(cmd, check=True)
 
-print("✅ Base video created with 70% personal clips / 30% Pixabay")
+print("✅ Final base video created successfully")
