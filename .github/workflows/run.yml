@@ -20,27 +20,40 @@ jobs:
         with:
           python-version: "3.10"
 
-      # 🔧 CRITICAL: Install FFmpeg first
+      # ---- SYSTEM DEPENDENCIES ----
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # 🔧 Install Python dependencies cleanly
-      - name: Install Python dependencies
+      # ---- PYTHON DEPENDENCIES ----
+      - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
           pip install requests edge-tts moviepy imageio imageio-ffmpeg
 
+      # ---- SCRIPT ----
       - name: Generate script
         run: python script.py
 
-      - name: Generate raw voice (natural TTS)
+      # ---- VOICE ----
+      - name: Generate raw voice
         run: python voice.py
 
       - name: Mix voice with background music
         run: python mix_audio.py
 
-      - name: Upload final mixed voice
+      # ---- STOCK CLIPS ----
+      - name: Download stock clips
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: python download_stock.py
+
+      # ---- VIDEO BUILD ----
+      - name: Build final short video
+        run: python build_video.py
+
+      # ---- UPLOAD RESULT ----
+      - name: Upload final short
         uses: actions/upload-artifact@v4
         with:
-          name: final-voice
-          path: voice.mp3
+          name: short-video
+          path: short.mp4
