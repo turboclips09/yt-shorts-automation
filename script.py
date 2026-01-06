@@ -1,51 +1,44 @@
 import random
 
 HOOKS = [
-    "Modern cars are faster than ever, yet most people enjoy driving less than before.",
-    "Here’s a car truth no manufacturer wants you thinking about.",
-    "Cars didn’t become boring by accident — they were engineered that way.",
+    "Here’s a car truth that ruins modern driving forever.",
+    "Modern cars didn’t get boring by accident.",
     "This is why driving today feels impressive but empty.",
-    "The biggest lie about modern cars isn’t horsepower or speed."
+    "The biggest lie about fast cars isn’t speed.",
 ]
 
-FACTS = [
-    "In the 90s, a 300-horsepower car was considered borderline insane.",
-    "Today, even family sedans quietly cross 300 horsepower.",
-    "But raw speed was never what made cars exciting.",
-    "Old cars forced drivers to think, react, and feel every mistake.",
-    "Steering used to fight back. Brakes demanded respect. Throttle inputs mattered.",
-    "Modern cars smooth out everything before it reaches you.",
-    "Electronic steering filters road feel on purpose.",
-    "Stability control corrects slides before your brain even notices.",
-    "Automatic gearboxes decide for you when excitement is inconvenient.",
-    "Sound engineers now fake engine noise through speakers.",
-    "Some sports cars are quieter inside than economy cars from the 90s."
+CORE = [
+    "In the 90s, a 300-horsepower car felt terrifying.",
+    "Today, normal family sedans quietly make the same power.",
+    "Yet most drivers feel less excitement than ever.",
+    "That’s because speed was never the thrill.",
+    "Old cars demanded attention, skill, and respect.",
+    "Steering fought back, brakes scared you, mistakes punished you.",
+    "Your brain stayed fully alert every second behind the wheel.",
+    "Modern cars remove that tension on purpose.",
+    "Electronics fix slides before you even sense them.",
+    "Automatic gearboxes decide when excitement is allowed.",
+    "Some sports cars fake engine sound through speakers.",
+    "You’re not driving faster — you’re being protected from feeling it.",
 ]
 
-TRUTHS = [
-    "Cars became safer, cleaner, and faster — but also emotionally muted.",
-    "Manufacturers optimize for comfort scores, not driver connection.",
-    "Most drivers don’t want involvement, they want reassurance.",
-    "So cars stopped demanding skill and started offering confidence.",
-    "That’s great for safety, but terrible for passion."
+TWISTS = [
+    "That’s why slower cars used to feel alive.",
+    "That’s why fast cars today feel forgettable.",
+    "Comfort killed connection.",
+    "Safety killed involvement.",
 ]
 
-PAYOFFS = [
-    "That’s why slower cars used to feel faster.",
-    "That’s why speed today feels strangely forgettable.",
-    "That’s why a cheap old car can feel more alive than a modern supercar.",
-    "The thrill wasn’t the speed — it was the risk and feedback.",
-    "Once you notice this, driving will never feel the same again."
+LOOPS = [
+    "Once you notice this, driving never feels the same.",
+    "Now pay attention next time you drive.",
 ]
-
-def pick_unique(lst, n):
-    return random.sample(lst, n)
 
 script = " ".join(
-    pick_unique(HOOKS, 1)
-    + pick_unique(FACTS, 6)
-    + pick_unique(TRUTHS, 4)
-    + pick_unique(PAYOFFS, 2)
+    random.sample(HOOKS, 1)
+    + random.sample(CORE, 9)
+    + random.sample(TWISTS, 2)
+    + random.sample(LOOPS, 1)
 )
 
 with open("script.txt", "w", encoding="utf-8") as f:
