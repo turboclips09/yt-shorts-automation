@@ -29,14 +29,24 @@ probe = subprocess.run(
 duration = float(probe.stdout.strip())
 
 # -------------------------------------------------
-# Caption pacing (locked to speech)
+# PERCEPTUAL TIMING (THIS IS THE KEY)
 # -------------------------------------------------
 WORDS_PER_PHRASE = 3
+
+# Human-readable timing (Shorts standard)
+MIN_CAPTION_TIME = 0.45
+MAX_CAPTION_TIME = 0.75
+
 total_phrases = math.ceil(len(words) / WORDS_PER_PHRASE)
-phrase_time = duration / total_phrases
+avg_time = duration / total_phrases
+
+caption_time = max(
+    MIN_CAPTION_TIME,
+    min(MAX_CAPTION_TIME, avg_time)
+)
 
 # -------------------------------------------------
-# ASS header (SHORTS-COOL STYLE)
+# ASS header (CUSTOM FONT, PREMIUM LOOK)
 # -------------------------------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -48,8 +58,8 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 
-; ===== YOUTUBE SHORTS STYLE =====
-Style: Default,DejaVu Sans Condensed Bold,108,&H00FFFFFF,&H0000E6FF,&H00000000,&H40000000,1,0,0,0,100,100,4,0,1,7,3,2,70,70,320,1
+; === PREMIUM SHORTS STYLE ===
+Style: Default,Poppins ExtraBold,110,&H00FFFFFF,&H0000E6FF,&H00000000,&H3C000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -62,19 +72,18 @@ def ts(t):
     return f"{h}:{m:02d}:{s:05.2f}"
 
 # -------------------------------------------------
-# Build captions (NO overlap, smooth pop)
+# Build captions (CALM, CLEAN, COOL)
 # -------------------------------------------------
 events = []
 current_time = 0.0
-MAX_LINE_CHARS = 16
+MAX_LINE_CHARS = 14
 
 for i in range(0, len(words), WORDS_PER_PHRASE):
     phrase = words[i:i + WORDS_PER_PHRASE]
 
-    # Highlight middle word
     hi = len(phrase) // 2
 
-    # Build lines safely
+    # Line building
     lines = []
     line = ""
 
@@ -90,14 +99,14 @@ for i in range(0, len(words), WORDS_PER_PHRASE):
 
     lines = lines[:2]
 
-    # Apply highlight + subtle pop
+    # Highlight + soft pop
     flat = 0
     for li in range(len(lines)):
         parts = lines[li].split()
         for pi in range(len(parts)):
             if flat == hi:
                 parts[pi] = (
-                    r"{\c&H0000E6FF&\fscx92\fscy92\t(0,140,\fscx100\fscy100)}"
+                    r"{\c&H0000E6FF&\fscx94\fscy94\t(0,160,\fscx100\fscy100)}"
                     + parts[pi] +
                     r"{\c&H00FFFFFF&}"
                 )
@@ -107,18 +116,15 @@ for i in range(0, len(words), WORDS_PER_PHRASE):
     rendered = r"\N".join(lines)
 
     start = ts(current_time)
-    end = ts(current_time + phrase_time)
+    end = ts(current_time + caption_time)
 
     events.append(
         f"Dialogue: 0,{start},{end},Default,,0,0,0,,{rendered}"
     )
 
-    current_time += phrase_time
+    current_time += caption_time
 
-# -------------------------------------------------
-# Write captions
-# -------------------------------------------------
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("🔥 COOL YouTube Shorts captions generated")
+print("🔥 PREMIUM YouTube Shorts captions generated")
