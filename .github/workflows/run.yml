@@ -2,13 +2,10 @@ name: yt-shorts-automation
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 6 * * *"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     env:
       PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
 
@@ -19,37 +16,18 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install system dependencies
-        run: sudo apt update && sudo apt install -y ffmpeg
+      - run: sudo apt update && sudo apt install -y ffmpeg
+      - run: pip install edge-tts requests
 
-      - name: Install Python dependencies
-        run: pip install edge-tts requests
+      - run: python script.py
+      - run: python voice.py
+      - run: python captions.py
+      - run: python download_stock.py
+      - run: python build_video_ffmpeg.py
 
-      - name: Debug secret presence (SAFE)
-        run: |
-          if [ -z "$PIXABAY_API_KEY" ]; then
-            echo "❌ PIXABAY_API_KEY is EMPTY"
-            exit 1
-          else
-            echo "✅ PIXABAY_API_KEY is PRESENT"
-          fi
-
-      - name: Generate script
-        run: python script.py
-
-      - name: Generate voice + word timestamps
-        run: python voice.py
-
-      - name: Generate captions
-        run: python captions.py
-
-      - name: Download Pixabay videos
-        run: python download_stock.py
-
-      - name: Build final video
-        run: python build_video_ffmpeg.py
+      - run: zip final.zip final.mp4
 
       - uses: actions/upload-artifact@v4
         with:
           name: youtube-short
-          path: final.mp4
+          path: final.zip
