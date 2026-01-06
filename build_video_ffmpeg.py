@@ -1,37 +1,50 @@
 import subprocess
 import glob
+import math
 
-# Collect assets
 videos = sorted(glob.glob("assets/videos/*.mp4"))
 images = sorted(glob.glob("assets/images/*.jpg"))
 assets = videos + images
 
-# Build FFmpeg input list
-with open("inputs.txt", "w") as f:
-    for a in assets:
-        f.write(f"file '{a}'\n")
-        f.write("duration 1.8\n")
+# Repeat assets if not enough
+while len(assets) < 12:
+    assets += assets
+
+duration_per_asset = 1.4  # seconds
+inputs = []
+
+for a in assets[:15]:
+    inputs.extend(["-loop", "1", "-t", str(duration_per_asset), "-i", a])
+
+filter_parts = []
+for i in range(len(assets[:15])):
+    filter_parts.append(
+        f"[{i}:v]scale=1080:1920:force_original_aspect_ratio=increase,"
+        f"crop=1080:1920,"
+        f"fps=30,"
+        f"format=yuv420p[v{i}]"
+    )
+
+concat_inputs = "".join([f"[v{i}]" for i in range(len(assets[:15]))])
+
+filter_complex = (
+    ";".join(filter_parts)
+    + f";{concat_inputs}concat=n={len(assets[:15])}:v=1:a=0[outv]"
+)
 
 cmd = [
-    "ffmpeg",
-    "-y",
-    "-f", "concat",
-    "-safe", "0",
-    "-i", "inputs.txt",
+    "ffmpeg", "-y",
+    *inputs,
     "-i", "voice.mp3",
-    "-filter_complex",
-    (
-        "scale=1080:1920:force_original_aspect_ratio=increase,"
-        "crop=1080:1920,"
-        "zoompan=z='min(zoom+0.0015,1.1)':d=45,"
-        "fps=30"
-    ),
+    "-filter_complex", filter_complex,
+    "-map", "[outv]",
+    "-map", str(len(assets[:15])),
     "-shortest",
     "-c:v", "libx264",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
-    "short.mp4"
+    "base.mp4"
 ]
 
 subprocess.run(cmd, check=True)
-print("FFmpeg dynamic short created")
+print("Base visual video created (base.mp4)")
