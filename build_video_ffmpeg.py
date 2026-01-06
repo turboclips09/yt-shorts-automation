@@ -1,30 +1,22 @@
 import subprocess
 import glob
 
-video_files = sorted(glob.glob("assets/videos/*.mp4"))
-image_files = sorted(glob.glob("assets/images/*.jpg"))
+videos = sorted(glob.glob("assets/videos/*.mp4"))
 
-assets = video_files + image_files
+# Ensure enough clips
+while len(videos) < 12:
+    videos += videos
 
-# Ensure enough assets
-while len(assets) < 12:
-    assets = assets + assets
-
-assets = assets[:12]
-duration = 1.4  # seconds per asset
+videos = videos[:12]
+duration = 1.6  # seconds per clip
 
 cmd = ["ffmpeg", "-y"]
 
-# Add inputs
-for a in assets:
-    if a.endswith(".jpg"):
-        cmd.extend(["-loop", "1", "-t", str(duration), "-i", a])
-    else:
-        cmd.extend(["-t", str(duration), "-i", a])
+for v in videos:
+    cmd.extend(["-t", str(duration), "-i", v])
 
-# Build filter_complex with forced SAR
 filters = []
-for i in range(len(assets)):
+for i in range(len(videos)):
     filters.append(
         f"[{i}:v]"
         f"scale=1080:1920:force_original_aspect_ratio=increase,"
@@ -35,18 +27,18 @@ for i in range(len(assets)):
         f"[v{i}]"
     )
 
-concat_inputs = "".join(f"[v{i}]" for i in range(len(assets)))
+concat_inputs = "".join(f"[v{i}]" for i in range(len(videos)))
 
 filter_complex = (
     ";".join(filters)
-    + f";{concat_inputs}concat=n={len(assets)}:v=1:a=0[outv]"
+    + f";{concat_inputs}concat=n={len(videos)}:v=1:a=0[outv]"
 )
 
 cmd.extend([
     "-i", "voice.mp3",
     "-filter_complex", filter_complex,
     "-map", "[outv]",
-    "-map", str(len(assets)),
+    "-map", str(len(videos)),
     "-shortest",
     "-c:v", "libx264",
     "-pix_fmt", "yuv420p",
@@ -55,4 +47,4 @@ cmd.extend([
 ])
 
 subprocess.run(cmd, check=True)
-print("✅ Base video created successfully: base.mp4")
+print("✅ Base video created with high-quality driving footage")
