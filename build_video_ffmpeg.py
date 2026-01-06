@@ -15,30 +15,31 @@ duration = 1.4  # seconds per asset
 
 cmd = ["ffmpeg", "-y"]
 
-# Add inputs correctly
+# Add inputs
 for a in assets:
     if a.endswith(".jpg"):
         cmd.extend(["-loop", "1", "-t", str(duration), "-i", a])
     else:
         cmd.extend(["-t", str(duration), "-i", a])
 
-# Build filter_complex
+# Build filter_complex with forced SAR
 filters = []
 for i in range(len(assets)):
     filters.append(
         f"[{i}:v]"
         f"scale=1080:1920:force_original_aspect_ratio=increase,"
         f"crop=1080:1920,"
+        f"setsar=1,"
         f"fps=30,"
         f"format=yuv420p"
         f"[v{i}]"
     )
 
-concat = "".join(f"[v{i}]" for i in range(len(assets)))
+concat_inputs = "".join(f"[v{i}]" for i in range(len(assets)))
 
 filter_complex = (
     ";".join(filters)
-    + f";{concat}concat=n={len(assets)}:v=1:a=0[outv]"
+    + f";{concat_inputs}concat=n={len(assets)}:v=1:a=0[outv]"
 )
 
 cmd.extend([
@@ -54,4 +55,4 @@ cmd.extend([
 ])
 
 subprocess.run(cmd, check=True)
-print("Base video created successfully: base.mp4")
+print("✅ Base video created successfully: base.mp4")
