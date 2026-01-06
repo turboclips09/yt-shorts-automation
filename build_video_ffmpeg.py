@@ -60,7 +60,7 @@ filter_complex = (
     + ";"
     + f"{video_chain}concat=n={len(selected)}:v=1:a=0[base]"
     + ";"
-    + "[base]ass=captions.ass[outv]"
+    + "[base]ass=captions.ass:fontsdir=/usr/share/fonts[outv]"
 )
 
 cmd += [
