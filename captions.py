@@ -1,11 +1,50 @@
-import json
+import subprocess
+import re
 
-words = json.load(open("words.json", "r", encoding="utf-8"))
+# -----------------------------
+# Load script
+# -----------------------------
+text = open("script.txt", "r", encoding="utf-8").read().strip()
+words = re.findall(r"\b[\w’']+\b", text)
 
 if not words:
-    raise Exception("❌ words.json is empty — cannot generate captions")
+    raise Exception("No words found in script")
 
-ass_header = """[Script Info]
+# -----------------------------
+# Get audio duration (seconds)
+# -----------------------------
+probe = subprocess.run(
+    [
+        "ffprobe",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        "voice.mp3"
+    ],
+    capture_output=True,
+    text=True
+)
+
+duration_sec = float(probe.stdout.strip())
+duration_ms = duration_sec * 1000
+
+# -----------------------------
+# Karaoke timing
+# -----------------------------
+per_word_ms = duration_ms / len(words)
+per_word_cs = max(1, int(per_word_ms / 10))  # centiseconds
+
+karaoke = ""
+for w in words:
+    karaoke += f"{{\\k{per_word_cs}}}{w} "
+
+start = "0:00:00.00"
+end = f"0:00:{duration_sec:05.2f}"
+
+# -----------------------------
+# ASS file
+# -----------------------------
+ass = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
 PlayResY: 1920
@@ -18,23 +57,10 @@ Style: Default,Arial Black,96,&H00FFFFFF,&H0000FF00,&H00000000,&H64000000,1,0,0,
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,{start},{end},Default,,0,0,0,,{karaoke}
 """
 
-def to_time(ms):
-    s = ms / 1000
-    return f"0:00:{s:05.2f}"
-
-start = to_time(words[0]["offset"])
-end = to_time(words[-1]["offset"] + words[-1]["duration"])
-
-karaoke = ""
-for w in words:
-    dur = max(1, int(w["duration"] / 10))  # centiseconds
-    karaoke += f"{{\\k{dur}}}{w['word']} "
-
-dialogue = f"Dialogue: 0,{start},{end},Default,,0,0,0,,{karaoke}"
-
 with open("captions.ass", "w", encoding="utf-8") as f:
-    f.write(ass_header + dialogue)
+    f.write(ass)
 
-print("✅ Karaoke captions generated successfully")
+print("✅ Karaoke captions generated (audio-synced)")
