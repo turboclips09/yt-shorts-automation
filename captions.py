@@ -6,25 +6,10 @@ import math
 # Load script
 # -------------------------------------------------
 text = open("script.txt", "r", encoding="utf-8").read().strip()
-words = re.findall(r"\b[\w’']+\b", text.lower())
+words = re.findall(r"\b[\w’']+\b", text.upper())
 
 if not words:
     raise Exception("No words found")
-
-# -------------------------------------------------
-# Emoji map
-# -------------------------------------------------
-EMOJI_MAP = {
-    "speed": "⚡", "fast": "⚡", "faster": "⚡",
-    "power": "🐎", "horsepower": "🐎",
-    "engine": "🔊", "sound": "🔊",
-    "danger": "☠️", "dangerous": "☠️",
-    "old": "🕰️", "classic": "🕰️", "90s": "🕰️",
-    "modern": "🤖", "today": "🤖",
-    "boring": "😴",
-    "exciting": "🔥", "thrill": "🔥",
-    "drive": "🚗", "driving": "🚗", "car": "🚗"
-}
 
 # -------------------------------------------------
 # Get audio duration
@@ -44,17 +29,14 @@ probe = subprocess.run(
 duration = float(probe.stdout.strip())
 
 # -------------------------------------------------
-# Caption pacing
+# Caption pacing (locked to speech)
 # -------------------------------------------------
 WORDS_PER_PHRASE = 3
-READABILITY = 1.3
-
 total_phrases = math.ceil(len(words) / WORDS_PER_PHRASE)
-spoken_time = duration / total_phrases
-caption_time = spoken_time * READABILITY
+phrase_time = duration / total_phrases
 
 # -------------------------------------------------
-# ASS header (VIRAL STYLE)
+# ASS header (SHORTS-COOL STYLE)
 # -------------------------------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -65,7 +47,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,DejaVu Sans Bold,104,&H00FFFFFF,&H0000FFFF,&H00000000,&H4A000000,1,0,0,0,100,100,3,0,1,6,3,3,70,70,300,1
+
+; ===== YOUTUBE SHORTS STYLE =====
+Style: Default,DejaVu Sans Condensed Bold,108,&H00FFFFFF,&H0000E6FF,&H00000000,&H40000000,1,0,0,0,100,100,4,0,1,7,3,2,70,70,320,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -78,44 +62,42 @@ def ts(t):
     return f"{h}:{m:02d}:{s:05.2f}"
 
 # -------------------------------------------------
-# Build captions
+# Build captions (NO overlap, smooth pop)
 # -------------------------------------------------
 events = []
 current_time = 0.0
-MAX_LINE_CHARS = 18
+MAX_LINE_CHARS = 16
 
 for i in range(0, len(words), WORDS_PER_PHRASE):
     phrase = words[i:i + WORDS_PER_PHRASE]
 
-    # Pick emoji
-    emoji = ""
-    for w in phrase:
-        if w in EMOJI_MAP:
-            emoji = EMOJI_MAP[w]
-            break
-
-    # Highlight middle word with POP animation
+    # Highlight middle word
     hi = len(phrase) // 2
 
+    # Build lines safely
     lines = []
     line = ""
+
     for w in phrase:
         if len(line) + len(w) + 1 > MAX_LINE_CHARS:
             lines.append(line.strip())
             line = w + " "
         else:
             line += w + " "
+
     if line.strip():
         lines.append(line.strip())
+
     lines = lines[:2]
 
+    # Apply highlight + subtle pop
     flat = 0
     for li in range(len(lines)):
         parts = lines[li].split()
         for pi in range(len(parts)):
             if flat == hi:
                 parts[pi] = (
-                    r"{\c&H0000FFFF&\fscx120\fscy120\t(0,120,\fscx100\fscy100)}"
+                    r"{\c&H0000E6FF&\fscx92\fscy92\t(0,140,\fscx100\fscy100)}"
                     + parts[pi] +
                     r"{\c&H00FFFFFF&}"
                 )
@@ -123,22 +105,20 @@ for i in range(0, len(words), WORDS_PER_PHRASE):
         lines[li] = " ".join(parts)
 
     rendered = r"\N".join(lines)
-    if emoji:
-        rendered += f"  {emoji}"
 
     start = ts(current_time)
-    end = ts(current_time + caption_time)
+    end = ts(current_time + phrase_time)
 
     events.append(
         f"Dialogue: 0,{start},{end},Default,,0,0,0,,{rendered}"
     )
 
-    current_time += spoken_time
+    current_time += phrase_time
 
 # -------------------------------------------------
-# Write file
+# Write captions
 # -------------------------------------------------
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("🔥 Viral captions with POP animation & emojis generated")
+print("🔥 COOL YouTube Shorts captions generated")
