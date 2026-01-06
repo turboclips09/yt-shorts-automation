@@ -1,10 +1,23 @@
-from gtts import gTTS
+import asyncio
+import edge_tts
 
-# Read the generated script
-with open("script.txt", "r", encoding="utf-8") as f:
-    text = f.read()
+VOICE = "en-US-GuyNeural"  # energetic, natural
+RATE = "+5%"               # slightly faster = more energy
+VOLUME = "+0%"
 
-tts = gTTS(text=text, lang="en", slow=False)
-tts.save("voice.mp3")
+async def main():
+    with open("script.txt", "r", encoding="utf-8") as f:
+        text = f.read()
 
-print("Voiceover generated successfully")
+    communicate = edge_tts.Communicate(
+        text=text,
+        voice=VOICE,
+        rate=RATE,
+        volume=VOLUME
+    )
+
+    await communicate.save("voice_raw.mp3")
+
+asyncio.run(main())
+
+print("Natural voice generated")
