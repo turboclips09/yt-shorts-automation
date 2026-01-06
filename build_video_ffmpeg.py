@@ -1,50 +1,57 @@
 import subprocess
 import glob
-import math
 
-videos = sorted(glob.glob("assets/videos/*.mp4"))
-images = sorted(glob.glob("assets/images/*.jpg"))
-assets = videos + images
+video_files = sorted(glob.glob("assets/videos/*.mp4"))
+image_files = sorted(glob.glob("assets/images/*.jpg"))
 
-# Repeat assets if not enough
+assets = video_files + image_files
+
+# Ensure enough assets
 while len(assets) < 12:
-    assets += assets
+    assets = assets + assets
 
-duration_per_asset = 1.4  # seconds
-inputs = []
+assets = assets[:12]
+duration = 1.4  # seconds per asset
 
-for a in assets[:15]:
-    inputs.extend(["-loop", "1", "-t", str(duration_per_asset), "-i", a])
+cmd = ["ffmpeg", "-y"]
 
-filter_parts = []
-for i in range(len(assets[:15])):
-    filter_parts.append(
-        f"[{i}:v]scale=1080:1920:force_original_aspect_ratio=increase,"
+# Add inputs correctly
+for a in assets:
+    if a.endswith(".jpg"):
+        cmd.extend(["-loop", "1", "-t", str(duration), "-i", a])
+    else:
+        cmd.extend(["-t", str(duration), "-i", a])
+
+# Build filter_complex
+filters = []
+for i in range(len(assets)):
+    filters.append(
+        f"[{i}:v]"
+        f"scale=1080:1920:force_original_aspect_ratio=increase,"
         f"crop=1080:1920,"
         f"fps=30,"
-        f"format=yuv420p[v{i}]"
+        f"format=yuv420p"
+        f"[v{i}]"
     )
 
-concat_inputs = "".join([f"[v{i}]" for i in range(len(assets[:15]))])
+concat = "".join(f"[v{i}]" for i in range(len(assets)))
 
 filter_complex = (
-    ";".join(filter_parts)
-    + f";{concat_inputs}concat=n={len(assets[:15])}:v=1:a=0[outv]"
+    ";".join(filters)
+    + f";{concat}concat=n={len(assets)}:v=1:a=0[outv]"
 )
 
-cmd = [
-    "ffmpeg", "-y",
-    *inputs,
+cmd.extend([
     "-i", "voice.mp3",
     "-filter_complex", filter_complex,
     "-map", "[outv]",
-    "-map", str(len(assets[:15])),
+    "-map", str(len(assets)),
     "-shortest",
     "-c:v", "libx264",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
     "base.mp4"
-]
+])
 
 subprocess.run(cmd, check=True)
-print("Base visual video created (base.mp4)")
+print("Base video created successfully: base.mp4")
