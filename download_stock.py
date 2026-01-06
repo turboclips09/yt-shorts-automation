@@ -1,140 +1,73 @@
-import requests
-import os
-import random
-import time
+import requests, os, random, time
 
 API_KEY = os.getenv("PIXABAY_API_KEY")
 
-# EXTREMELY STRICT CAR-ONLY SEARCH TERMS
+if not API_KEY:
+    raise Exception("❌ PIXABAY_API_KEY not found in environment")
+
+print("✅ Pixabay API key detected")
+
 SEARCH_TERMS = [
     "supercar driving",
     "sports car racing",
+    "car drifting",
     "race car track",
-    "drift car racing",
-    "car drifting smoke",
-    "racing car POV",
-    "car cockpit POV",
-    "supercar acceleration",
-    "hypercar driving",
-    "night car racing",
-    "luxury sports car driving",
-    "track racing cars",
-    "supercar highway",
-    "race car onboard",
-    "drift racing cars"
+    "hypercar",
+    "supercar acceleration"
 ]
 
-# REQUIRED WORDS — MUST APPEAR IN TAGS
-REQUIRED_KEYWORDS = [
-    "car",
-    "cars",
-    "supercar",
-    "race",
-    "racing",
-    "drift",
-    "drifting",
-    "automobile",
-    "vehicle"
-]
+REQUIRED = ["car", "race", "drift", "supercar"]
+BANNED = ["mountain", "nature", "cloth", "forest", "abstract"]
 
-# BANNED WORDS — IF PRESENT, REJECT
-BANNED_KEYWORDS = [
-    "mountain",
-    "nature",
-    "forest",
-    "landscape",
-    "scenery",
-    "road",
-    "highway",
-    "city",
-    "traffic",
-    "sky",
-    "cloud",
-    "cloth",
-    "fabric",
-    "abstract",
-    "background",
-    "timelapse"
-]
-
-TARGET_COUNT = 50
 os.makedirs("assets/videos", exist_ok=True)
 
 downloaded = 0
-seen_ids = set()
 attempts = 0
+MAX_VIDEOS = 30   # enough for 30% mix
+MAX_ATTEMPTS = 10
 
-while downloaded < TARGET_COUNT and attempts < 400:
+while downloaded < MAX_VIDEOS and attempts < MAX_ATTEMPTS:
     attempts += 1
-    query = random.choice(SEARCH_TERMS)
+    q = random.choice(SEARCH_TERMS)
 
-    try:
-        response = requests.get(
-            "https://pixabay.com/api/videos/",
-            params={
-                "key": API_KEY,
-                "q": query,
-                "per_page": 50,
-                "safesearch": "true",
-                "order": "latest"
-            },
-            timeout=12
-        )
-    except:
-        continue
+    print(f"🔍 Searching Pixabay for: {q}")
 
-    if response.status_code != 200:
-        continue
+    r = requests.get(
+        "https://pixabay.com/api/videos/",
+        params={
+            "key": API_KEY,
+            "q": q,
+            "per_page": 50
+        },
+        timeout=15
+    ).json()
 
-    hits = response.json().get("hits", [])
-    if not hits:
-        continue
+    hits = r.get("hits", [])
+    print(f"📦 Results received: {len(hits)}")
 
-    random.shuffle(hits)
+    for v in hits:
+        tags = v.get("tags", "").lower()
 
-    for video in hits:
-        if downloaded >= TARGET_COUNT:
+        if not any(k in tags for k in REQUIRED):
+            continue
+        if any(b in tags for b in BANNED):
+            continue
+
+        url = v["videos"]["medium"]["url"]
+        out = f"assets/videos/v{downloaded}.mp4"
+
+        print(f"⬇️ Downloading video {downloaded + 1}")
+
+        with open(out, "wb") as f:
+            f.write(requests.get(url, timeout=20).content)
+
+        downloaded += 1
+        time.sleep(0.3)
+
+        if downloaded >= MAX_VIDEOS:
             break
 
-        vid = video.get("id")
-        if vid in seen_ids:
-            continue
+print(f"✅ Total Pixabay videos downloaded: {downloaded}")
 
-        tags = video.get("tags", "").lower()
-
-        # MUST contain car-related keywords
-        if not any(word in tags for word in REQUIRED_KEYWORDS):
-            continue
-
-        # MUST NOT contain banned keywords
-        if any(word in tags for word in BANNED_KEYWORDS):
-            continue
-
-        videos = video.get("videos", {})
-        chosen = (
-            videos.get("large") or
-            videos.get("medium") or
-            videos.get("small")
-        )
-
-        if not chosen or not chosen.get("url"):
-            continue
-
-        path = f"assets/videos/v{downloaded}.mp4"
-
-        try:
-            with requests.get(chosen["url"], stream=True, timeout=20) as r:
-                with open(path, "wb") as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        if chunk:
-                            f.write(chunk)
-        except:
-            continue
-
-        seen_ids.add(vid)
-        downloaded += 1
-        print(f"Downloaded {downloaded}/{TARGET_COUNT}")
-
-        time.sleep(0.15)  # avoid API throttling
-
-print(f"🔥 DONE: {downloaded} refined, car-only cinematic videos downloaded")
+if downloaded < 10:
+    raise Exception("❌ Too few Pixabay videos downloaded — check filters or API limits")
