@@ -1,59 +1,104 @@
-import glob, math, random, subprocess as sp
+import glob
+import math
+import random
+import subprocess as sp
 
-my = glob.glob("assets/assets/my_videos/*.mp4")
-px = glob.glob("assets/videos/*.mp4")
+# -----------------------------
+# Collect videos
+# -----------------------------
+my_videos = glob.glob("assets/assets/my_videos/*.mp4")
+pixabay_videos = glob.glob("assets/videos/*.mp4")
 
-print(len(my), "personal")
-print(len(px), "pixabay")
+print(f"Found {len(my_videos)} personal videos")
+print(f"Found {len(pixabay_videos)} pixabay videos")
 
+if len(my_videos) < 5:
+    raise Exception("Not enough personal videos")
+
+if len(pixabay_videos) < 5:
+    raise Exception("Not enough pixabay videos")
+
+# -----------------------------
+# Get voice duration
+# -----------------------------
 probe = sp.run(
-    ["ffprobe","-v","error","-show_entries","format=duration",
-     "-of","default=nokey=1:noprint_wrappers=1","voice.mp3"],
-    capture_output=True, text=True
+    [
+        "ffprobe",
+        "-v", "error",
+        "-show_entries", "format=duration",
+        "-of", "default=noprint_wrappers=1:nokey=1",
+        "voice.mp3"
+    ],
+    capture_output=True,
+    text=True
 )
 
-dur = float(probe.stdout.strip())
-clips = math.ceil(dur / 1.6)
+duration = float(probe.stdout.strip())
 
-m = int(clips * 0.7)
-p = clips - m
+# -----------------------------
+# Clip planning
+# -----------------------------
+clip_len = 1.6
+total_clips = math.ceil(duration / clip_len)
 
-random.shuffle(my)
-random.shuffle(px)
+my_count = int(total_clips * 0.7)
+pix_count = total_clips - my_count
 
-sel = my[:m] + px[:p]
-random.shuffle(sel)
+random.shuffle(my_videos)
+random.shuffle(pixabay_videos)
 
-cmd = ["ffmpeg","-y"]
+selected = my_videos[:my_count] + pixabay_videos[:pix_count]
+random.shuffle(selected)
 
-for v in sel:
-    cmd += ["-ss","0.4","-t","1.6","-i",v]
+print(f"Using {my_count} personal + {pix_count} pixabay clips")
 
-cmd += ["-i","voice.mp3"]
+# -----------------------------
+# Build FFmpeg command
+# -----------------------------
+cmd = ["ffmpeg", "-y"]
 
+# video inputs
+for v in selected:
+    cmd += ["-ss", "0.4", "-t", str(clip_len), "-i", v]
+
+# audio input
+cmd += ["-i", "voice.mp3"]
+
+# -----------------------------
+# Filter graph
+# -----------------------------
 filters = []
-for i in range(len(sel)):
+
+for i in range(len(selected)):
     filters.append(
-        f"[{i}:v]scale=1080:1920:force_original_aspect_ratio=increase,"
-        f"crop=1080:1920,setsar=1[v{i}]"
+        f"[{i}:v]"
+        f"scale=1080:1920:force_original_aspect_ratio=increase,"
+        f"crop=1080:1920,"
+        f"setsar=1[v{i}]"
     )
 
-fc = (
+video_chain = "".join(f"[v{i}]" for i in range(len(selected)))
+
+filter_complex = (
     ";".join(filters)
     + ";"
-    + "".join(f"[v{i}]" for i in range(len(sel)))
-    + f"concat=n={len(sel)}:v=1:a=0[base]"
-    + ";[base]ass=captions.ass[outv]"
+    + f"{video_chain}concat=n={len(selected)}:v=1:a=0[base]"
+    + ";"
+    + "[base]ass=captions.ass:fontsdir=/usr/share/fonts[outv]"
 )
 
+# -----------------------------
+# Final output
+# -----------------------------
 cmd += [
-    "-filter_complex", fc,
-    "-map","[outv]",
-    "-map",str(len(sel)),
+    "-filter_complex", filter_complex,
+    "-map", "[outv]",
+    "-map", str(len(selected)),
     "-shortest",
-    "-movflags","+faststart",
+    "-movflags", "+faststart",
     "final.mp4"
 ]
 
+print("Running FFmpeg...")
 sp.run(cmd, check=True)
-print("Video done")
+print("✅ Final video generated: final.mp4")
