@@ -1,5 +1,5 @@
 from moviepy import VideoFileClip, AudioFileClip, concatenate_videoclips
-from moviepy.video.fx import Resize
+from moviepy.video.fx import Resize, Crop
 import os
 
 # Load final audio
@@ -11,18 +11,16 @@ for file in sorted(os.listdir("clips")):
     if file.endswith(".mp4"):
         clip = VideoFileClip(os.path.join("clips", file))
 
-        # Resize to vertical (9:16)
+        # Apply resize + center crop using MoviePy v2 effects
         clip = clip.with_effects([
-            Resize(height=1920)
+            Resize(height=1920),
+            Crop(
+                width=1080,
+                height=1920,
+                x_center=clip.w / 2,
+                y_center=clip.h / 2
+            )
         ])
-
-        # Center crop to exact 1080x1920
-        clip = clip.crop(
-            width=1080,
-            height=1920,
-            x_center=clip.w / 2,
-            y_center=clip.h / 2
-        )
 
         clips.append(clip)
 
@@ -32,7 +30,7 @@ final_video = concatenate_videoclips(clips, method="compose")
 # Trim video to match audio duration
 final_video = final_video.subclip(0, audio.duration)
 
-# Add audio
+# Attach audio
 final_video = final_video.with_audio(audio)
 
 # Export final short
