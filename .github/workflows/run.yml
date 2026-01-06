@@ -9,6 +9,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,6 +24,15 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install edge-tts requests
+
+      - name: Debug secret presence (SAFE)
+        run: |
+          if [ -z "$PIXABAY_API_KEY" ]; then
+            echo "❌ PIXABAY_API_KEY is EMPTY"
+            exit 1
+          else
+            echo "✅ PIXABAY_API_KEY is PRESENT"
+          fi
 
       - name: Generate script
         run: python script.py
