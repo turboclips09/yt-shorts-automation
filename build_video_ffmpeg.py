@@ -1,12 +1,12 @@
 import subprocess
 import glob
 import math
+import random
 import subprocess as sp
 
-videos = sorted(glob.glob("assets/videos/*.mp4"))
-
-if not videos:
-    raise Exception("No videos found")
+videos = glob.glob("assets/videos/*.mp4")
+if len(videos) < 20:
+    raise Exception("Not enough videos — need at least 20")
 
 # Get audio duration
 probe = sp.run(
@@ -15,25 +15,22 @@ probe = sp.run(
      "default=noprint_wrappers=1:nokey=1", "voice.mp3"],
     capture_output=True, text=True
 )
-
 audio_duration = float(probe.stdout.strip())
 
 clip_duration = 1.6
 clips_needed = math.ceil(audio_duration / clip_duration)
 
-while len(videos) < clips_needed:
-    videos += videos
-
-videos = videos[:clips_needed]
+# 🔀 RANDOM SUBSET EACH RUN
+random.shuffle(videos)
+sequence = videos[:clips_needed]
 
 cmd = ["ffmpeg", "-y"]
 
-# ⬇️ SKIP FIRST 0.3s TO AVOID BLACK FRAMES
-for v in videos:
-    cmd.extend(["-ss", "0.3", "-t", str(clip_duration), "-i", v])
+for v in sequence:
+    cmd.extend(["-ss", "0.4", "-t", str(clip_duration), "-i", v])
 
 filters = []
-for i in range(len(videos)):
+for i in range(len(sequence)):
     filters.append(
         f"[{i}:v]"
         f"scale=1080:1920:force_original_aspect_ratio=increase,"
@@ -44,18 +41,18 @@ for i in range(len(videos)):
         f"[v{i}]"
     )
 
-concat_inputs = "".join(f"[v{i}]" for i in range(len(videos)))
+concat_inputs = "".join(f"[v{i}]" for i in range(len(sequence)))
 
 filter_complex = (
     ";".join(filters)
-    + f";{concat_inputs}concat=n={len(videos)}:v=1:a=0[outv]"
+    + f";{concat_inputs}concat=n={len(sequence)}:v=1:a=0[outv]"
 )
 
 cmd.extend([
     "-i", "voice.mp3",
     "-filter_complex", filter_complex,
     "-map", "[outv]",
-    "-map", str(len(videos)),
+    "-map", str(len(sequence)),
     "-shortest",
     "-c:v", "libx264",
     "-pix_fmt", "yuv420p",
@@ -64,5 +61,4 @@ cmd.extend([
 ])
 
 subprocess.run(cmd, check=True)
-
-print("✅ Black-frame-free base video created")
+print("✅ Fresh, non-repeating visual set created")
