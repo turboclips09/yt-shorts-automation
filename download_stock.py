@@ -4,51 +4,46 @@ import random
 
 API_KEY = os.getenv("PIXABAY_API_KEY")
 
-VIDEO_TERMS = [
+SEARCH_TERMS = [
     "sports car driving",
-    "luxury car",
-    "car highway",
+    "luxury car driving",
+    "supercar highway",
     "car interior driving",
-    "engine revving"
-]
-
-IMAGE_TERMS = [
-    "supercar",
-    "luxury car exterior",
-    "sports car front",
-    "car dashboard",
-    "car steering wheel"
+    "night car driving",
+    "car tunnel driving",
+    "engine revving car",
+    "fast car road"
 ]
 
 os.makedirs("assets/videos", exist_ok=True)
-os.makedirs("assets/images", exist_ok=True)
 
-# Download videos
-for i in range(6):
-    query = random.choice(VIDEO_TERMS)
+downloaded = 0
+attempts = 0
+
+while downloaded < 12 and attempts < 40:
+    attempts += 1
+    query = random.choice(SEARCH_TERMS)
+
     r = requests.get(
         "https://pixabay.com/api/videos/",
-        params={"key": API_KEY, "q": query, "per_page": 20}
+        params={
+            "key": API_KEY,
+            "q": query,
+            "per_page": 50,
+            "safesearch": "true"
+        }
     ).json()
+
+    if "hits" not in r or len(r["hits"]) == 0:
+        continue
 
     video = random.choice(r["hits"])
     url = video["videos"]["medium"]["url"]
 
-    with open(f"assets/videos/v{i}.mp4", "wb") as f:
+    path = f"assets/videos/v{downloaded}.mp4"
+    with open(path, "wb") as f:
         f.write(requests.get(url).content)
 
-# Download images
-for i in range(6):
-    query = random.choice(IMAGE_TERMS)
-    r = requests.get(
-        "https://pixabay.com/api/",
-        params={"key": API_KEY, "q": query, "per_page": 20}
-    ).json()
+    downloaded += 1
 
-    img = random.choice(r["hits"])
-    url = img["largeImageURL"]
-
-    with open(f"assets/images/i{i}.jpg", "wb") as f:
-        f.write(requests.get(url).content)
-
-print("Downloaded stock videos and images")
+print(f"Downloaded {downloaded} high-quality driving videos")
