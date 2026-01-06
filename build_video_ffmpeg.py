@@ -3,9 +3,9 @@ import math
 import random
 import subprocess as sp
 
-# -----------------------------
-# Collect videos
-# -----------------------------
+# -------------------------------------------------
+# Collect video sources
+# -------------------------------------------------
 my_videos = glob.glob("assets/assets/my_videos/*.mp4")
 pixabay_videos = glob.glob("assets/videos/*.mp4")
 
@@ -13,14 +13,14 @@ print(f"Found {len(my_videos)} personal videos")
 print(f"Found {len(pixabay_videos)} pixabay videos")
 
 if len(my_videos) < 5:
-    raise Exception("Not enough personal videos")
+    raise Exception("❌ Not enough personal videos")
 
 if len(pixabay_videos) < 5:
-    raise Exception("Not enough pixabay videos")
+    raise Exception("❌ Not enough pixabay videos")
 
-# -----------------------------
+# -------------------------------------------------
 # Get voice duration
-# -----------------------------
+# -------------------------------------------------
 probe = sp.run(
     [
         "ffprobe",
@@ -35,11 +35,11 @@ probe = sp.run(
 
 duration = float(probe.stdout.strip())
 
-# -----------------------------
+# -------------------------------------------------
 # Clip planning
-# -----------------------------
-clip_len = 1.6
-total_clips = math.ceil(duration / clip_len)
+# -------------------------------------------------
+CLIP_LEN = 1.6
+total_clips = math.ceil(duration / CLIP_LEN)
 
 my_count = int(total_clips * 0.7)
 pix_count = total_clips - my_count
@@ -52,21 +52,21 @@ random.shuffle(selected)
 
 print(f"Using {my_count} personal + {pix_count} pixabay clips")
 
-# -----------------------------
+# -------------------------------------------------
 # Build FFmpeg command
-# -----------------------------
+# -------------------------------------------------
 cmd = ["ffmpeg", "-y"]
 
-# video inputs
+# Video inputs
 for v in selected:
-    cmd += ["-ss", "0.4", "-t", str(clip_len), "-i", v]
+    cmd += ["-ss", "0.4", "-t", str(CLIP_LEN), "-i", v]
 
-# audio input
+# Audio input
 cmd += ["-i", "voice.mp3"]
 
-# -----------------------------
+# -------------------------------------------------
 # Filter graph
-# -----------------------------
+# -------------------------------------------------
 filters = []
 
 for i in range(len(selected)):
@@ -87,18 +87,18 @@ filter_complex = (
     + "[base]ass=captions.ass:fontsdir=/usr/share/fonts[outv]"
 )
 
-# -----------------------------
-# Final output
-# -----------------------------
+# -------------------------------------------------
+# Output
+# -------------------------------------------------
 cmd += [
     "-filter_complex", filter_complex,
     "-map", "[outv]",
-    "-map", str(len(selected)),
+    "-map", str(len(selected)),   # voice.mp3
     "-shortest",
     "-movflags", "+faststart",
     "final.mp4"
 ]
 
-print("Running FFmpeg...")
+print("▶️ Running FFmpeg…")
 sp.run(cmd, check=True)
-print("✅ Final video generated: final.mp4")
+print("✅ Final video created: final.mp4")
