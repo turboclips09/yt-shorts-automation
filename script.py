@@ -1,42 +1,59 @@
 import random
-import datetime
 
 hooks = [
-    "Most people don’t notice this.",
-    "This car feels illegal to drive.",
-    "This is why this car feels different.",
-    "This car was built without thinking twice.",
-    "This car doesn’t follow normal rules."
+    "Most people don’t know this about cars.",
+    "This is why cars feel different today.",
+    "Almost nobody talks about this car fact.",
+    "This happens every time you drive.",
+    "Cars were never meant to feel like this."
 ]
 
-bodies = [
-    "It looks normal at first glance, but once it starts moving, everything changes.",
-    "The engine sound alone tells you this car was not built for comfort.",
-    "Every turn feels aggressive, every acceleration feels intentional.",
-    "This car prioritizes speed and feel over logic and safety.",
-    "It’s the kind of car that rewards confidence, not hesitation."
+topics = [
+    [
+        "Modern cars are faster than ever, but they feel slower.",
+        "That’s because modern cars are designed to hide speed from the driver."
+    ],
+    [
+        "Older cars felt more exciting, even at low speeds.",
+        "They had less insulation, louder engines, and stiffer feedback."
+    ],
+    [
+        "Your car is constantly adjusting things without you noticing.",
+        "Steering, throttle, and traction are all being controlled."
+    ],
+    [
+        "Speed feels different depending on sound, vibration, and seating.",
+        "That’s why two cars at the same speed can feel completely different."
+    ],
+    [
+        "Cars today are built for comfort first, excitement second.",
+        "Safety systems quietly change how driving feels."
+    ]
 ]
 
 details = [
-    "The suspension is stiff.",
-    "The acceleration is instant.",
-    "The steering feels raw.",
-    "The exhaust is loud and unapologetic.",
-    "The driving position feels low and focused."
+    "More sound insulation.",
+    "Smoother suspension.",
+    "Quieter engines.",
+    "Electronic steering.",
+    "Computer-controlled throttle."
 ]
 
 loops = [
-    "And that’s why driving it feels unforgettable.",
-    "That’s why this car leaves a lasting impression.",
-    "And that’s why people still talk about it.",
-    "That’s why this kind of car is rare today.",
-    "And that’s why this feeling is hard to replace."
+    "And that’s why driving feels different now.",
+    "That’s why cars don’t feel the same anymore.",
+    "And once you notice it, you can’t unfeel it.",
+    "That’s why older cars felt more alive.",
+    "And that’s what most drivers never realize."
 ]
+
+topic = random.choice(topics)
 
 script = f"""
 {random.choice(hooks)}
 
-{random.choice(bodies)}
+{topic[0]}
+{topic[1]}
 
 {random.choice(details)}
 {random.choice(details)}
@@ -47,5 +64,5 @@ script = f"""
 with open("script.txt", "w", encoding="utf-8") as f:
     f.write(script.strip())
 
-print("Generated stock-friendly script:")
+print("Generated scroll-stopping car script:")
 print(script)
