@@ -1,28 +1,26 @@
 import subprocess
 import glob
 import math
+import subprocess as sp
 
-# Load assets
 videos = sorted(glob.glob("assets/videos/*.mp4"))
 
-if len(videos) == 0:
-    raise Exception("No videos found in assets/videos")
+if not videos:
+    raise Exception("No videos found")
 
 # Get audio duration
-import subprocess as sp
-result = sp.run(
+probe = sp.run(
     ["ffprobe", "-v", "error", "-show_entries",
      "format=duration", "-of",
      "default=noprint_wrappers=1:nokey=1", "voice.mp3"],
     capture_output=True, text=True
 )
 
-audio_duration = float(result.stdout.strip())
+audio_duration = float(probe.stdout.strip())
 
-clip_duration = 1.6  # seconds per clip
+clip_duration = 1.6
 clips_needed = math.ceil(audio_duration / clip_duration)
 
-# Repeat videos until enough
 while len(videos) < clips_needed:
     videos += videos
 
@@ -30,9 +28,9 @@ videos = videos[:clips_needed]
 
 cmd = ["ffmpeg", "-y"]
 
-# Inputs
+# ⬇️ SKIP FIRST 0.3s TO AVOID BLACK FRAMES
 for v in videos:
-    cmd.extend(["-t", str(clip_duration), "-i", v])
+    cmd.extend(["-ss", "0.3", "-t", str(clip_duration), "-i", v])
 
 filters = []
 for i in range(len(videos)):
@@ -67,4 +65,4 @@ cmd.extend([
 
 subprocess.run(cmd, check=True)
 
-print("✅ Base video now matches full script duration")
+print("✅ Black-frame-free base video created")
