@@ -2,6 +2,9 @@ import json
 
 words = json.load(open("words.json", "r", encoding="utf-8"))
 
+if not words:
+    raise Exception("❌ words.json is empty — cannot generate captions")
+
 ass_header = """[Script Info]
 ScriptType: v4.00+
 PlayResX: 1080
@@ -21,19 +24,17 @@ def to_time(ms):
     s = ms / 1000
     return f"0:00:{s:05.2f}"
 
-# Build karaoke line
-karaoke = ""
-start_time = to_time(words[0]["offset"])
-end_time = to_time(words[-1]["offset"] + words[-1]["duration"])
+start = to_time(words[0]["offset"])
+end = to_time(words[-1]["offset"] + words[-1]["duration"])
 
+karaoke = ""
 for w in words:
-    # \k uses centiseconds
-    dur = int(w["duration"] / 10)
+    dur = max(1, int(w["duration"] / 10))  # centiseconds
     karaoke += f"{{\\k{dur}}}{w['word']} "
 
-dialogue = f"Dialogue: 0,{start_time},{end_time},Default,,0,0,0,,{karaoke}"
+dialogue = f"Dialogue: 0,{start},{end},Default,,0,0,0,,{karaoke}"
 
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass_header + dialogue)
 
-print("✅ Karaoke captions (\\k timing) generated")
+print("✅ Karaoke captions generated successfully")
