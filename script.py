@@ -32,4 +32,61 @@ modern_design = [
     "New cars are built to feel stable and calm at all times.",
     "Comfort and safety now come before raw feedback.",
     "Technology smooths out almost every sensation.",
-    "Computers filter most of what the driver used to feel
+    "Computers filter most of what the driver used to feel."
+]
+
+details = [
+    "Heavier sound insulation blocks noise.",
+    "Electronic steering removes resistance.",
+    "Throttle response is computer controlled.",
+    "Suspension absorbs bumps aggressively.",
+    "Stability systems correct every movement."
+]
+
+contrast = [
+    "Older cars didn’t filter any of this.",
+    "There was nothing separating the driver from the road.",
+    "You felt every vibration and heard every sound.",
+    "Even low speeds felt intense.",
+    "Driving demanded attention."
+]
+
+realizations = [
+    "That’s why slower cars used to feel exciting.",
+    "That’s why speed felt dramatic years ago.",
+    "That’s why driving felt more alive.",
+    "That’s why people miss how cars used to feel.",
+    "That’s why excitement isn’t just about speed."
+]
+
+loops = [
+    "And once you notice this, you’ll feel it every time you drive.",
+    "After this, cars won’t feel the same anymore.",
+    "That realization completely changes how driving feels.",
+    "Now you’ll start noticing it everywhere.",
+    "That’s the detail most drivers never think about."
+]
+
+# Build script with guaranteed variety
+hook = random.choice(hooks)
+opener = random.choice(openers)
+
+sensory_block = pick_unique(sensory, 2)
+detail_block = pick_unique(details, 2)
+
+script = (
+    f"{hook} "
+    f"{opener} "
+    f"{sensory_block[0]} {sensory_block[1]} "
+    f"{random.choice(modern_design)} "
+    f"{detail_block[0]} {detail_block[1]} "
+    f"{random.choice(contrast)} "
+    f"{random.choice(realizations)} "
+    f"{random.choice(loops)}"
+)
+
+with open("script.txt", "w", encoding="utf-8") as f:
+    f.write(script.strip())
+
+print("Generated premium, non-repetitive 35–45s script:")
+print(script)
