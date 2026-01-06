@@ -12,46 +12,66 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # ------------------------------
+      # CHECKOUT CODE
+      # ------------------------------
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ------------------------------
+      # PYTHON SETUP
+      # ------------------------------
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      # ---- SYSTEM DEPENDENCIES ----
+      # ------------------------------
+      # SYSTEM DEPENDENCIES
+      # ------------------------------
       - name: Install FFmpeg
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-      # ---- PYTHON DEPENDENCIES ----
+      # ------------------------------
+      # PYTHON DEPENDENCIES
+      # ------------------------------
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
           pip install requests edge-tts moviepy imageio imageio-ffmpeg
 
-      # ---- SCRIPT ----
+      # ------------------------------
+      # SCRIPT
+      # ------------------------------
       - name: Generate script
         run: python script.py
 
-      # ---- VOICE ----
+      # ------------------------------
+      # VOICE
+      # ------------------------------
       - name: Generate raw voice
         run: python voice.py
 
       - name: Mix voice with background music
         run: python mix_audio.py
 
-      # ---- STOCK CLIPS ----
-      - name: Download stock clips
+      # ------------------------------
+      # STOCK ASSETS
+      # ------------------------------
+      - name: Download stock videos and images
         env:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: python download_stock.py
 
-      # ---- VIDEO BUILD ----
-      - name: Build final short video
-        run: python build_video.py
+      # ------------------------------
+      # BUILD VIDEO (FFMPEG)
+      # ------------------------------
+      - name: Build dynamic short video (FFmpeg)
+        run: python build_video_ffmpeg.py
 
-      # ---- UPLOAD RESULT ----
+      # ------------------------------
+      # UPLOAD RESULT
+      # ------------------------------
       - name: Upload final short
         uses: actions/upload-artifact@v4
         with:
