@@ -1,92 +1,74 @@
 import random
 
-def pick_unique(pool, n):
-    return random.sample(pool, n)
-
 hooks = [
-    "Cars today are faster than ever, yet they feel slower.",
-    "This is why modern cars don’t feel as exciting anymore.",
-    "Most people don’t realize this about how cars feel.",
-    "This changes how you think about speed in cars.",
-    "Cars didn’t always feel this calm while going fast."
+    "Modern cars are faster than ever, yet somehow feel boring.",
+    "This sounds crazy, but older cars felt faster than modern ones.",
+    "Here’s why modern cars killed driving excitement.",
+    "This is why driving doesn’t feel intense anymore.",
+    "Cars didn’t always feel this numb."
 ]
 
-openers = [
-    "It has almost nothing to do with horsepower or top speed.",
-    "It’s not about the engine or the numbers on the dashboard.",
-    "Speed is not just a number, it’s a sensation.",
-    "Your brain decides how fast a car feels before you look at the speedometer.",
-    "Driving feel is mostly psychological."
+provocations = [
+    "Speed today is hidden on purpose.",
+    "Modern cars are designed to calm you down.",
+    "Driving is no longer supposed to scare you.",
+    "Feeling speed is now considered a problem.",
+    "Excitement has been engineered out."
 ]
 
-sensory = [
-    "Sound plays a huge role in how fast something feels.",
-    "Vibration tells your body how much speed you’re carrying.",
-    "Steering weight and feedback change perception instantly.",
-    "Road noise and engine response shape excitement.",
-    "The way a car reacts matters more than raw speed."
+sensory_hits = [
+    "Your brain feels speed through sound, vibration, and resistance.",
+    "Noise, steering weight, and feedback tell your body how fast you’re moving.",
+    "Your senses react long before your eyes check the speedometer.",
+    "Speed is something you feel, not something you read.",
+    "Raw feedback creates tension."
 ]
 
-modern_design = [
-    "Modern cars are designed to hide speed from the driver.",
-    "New cars are built to feel stable and calm at all times.",
-    "Comfort and safety now come before raw feedback.",
-    "Technology smooths out almost every sensation.",
-    "Computers filter most of what the driver used to feel."
-]
-
-details = [
-    "Heavier sound insulation blocks noise.",
+modern_failures = [
+    "Heavy insulation kills sound.",
     "Electronic steering removes resistance.",
-    "Throttle response is computer controlled.",
-    "Suspension absorbs bumps aggressively.",
-    "Stability systems correct every movement."
+    "Computers smooth every input.",
+    "Stability systems correct everything.",
+    "Modern suspension isolates you from the road."
 ]
 
 contrast = [
-    "Older cars didn’t filter any of this.",
-    "There was nothing separating the driver from the road.",
-    "You felt every vibration and heard every sound.",
-    "Even low speeds felt intense.",
+    "Older cars didn’t protect you from speed.",
+    "There was no filter between you and the road.",
+    "Every vibration came straight to the driver.",
+    "Even 60 felt intense.",
     "Driving demanded attention."
 ]
 
-realizations = [
-    "That’s why slower cars used to feel exciting.",
-    "That’s why speed felt dramatic years ago.",
-    "That’s why driving felt more alive.",
+payoff = [
+    "That’s why slow cars used to feel exciting.",
+    "That’s why older cars felt alive.",
+    "That’s why modern speed feels empty.",
     "That’s why people miss how cars used to feel.",
-    "That’s why excitement isn’t just about speed."
+    "That’s why excitement isn’t about numbers."
 ]
 
 loops = [
-    "And once you notice this, you’ll feel it every time you drive.",
-    "After this, cars won’t feel the same anymore.",
-    "That realization completely changes how driving feels.",
-    "Now you’ll start noticing it everywhere.",
-    "That’s the detail most drivers never think about."
+    "Once you notice this, modern cars won’t feel the same.",
+    "After this, you’ll understand why driving feels different.",
+    "And now you know what’s missing.",
+    "You’ll feel this every time you drive.",
+    "That realization changes everything."
 ]
 
-# Build script with guaranteed variety
-hook = random.choice(hooks)
-opener = random.choice(openers)
-
-sensory_block = pick_unique(sensory, 2)
-detail_block = pick_unique(details, 2)
-
-script = (
-    f"{hook} "
-    f"{opener} "
-    f"{sensory_block[0]} {sensory_block[1]} "
-    f"{random.choice(modern_design)} "
-    f"{detail_block[0]} {detail_block[1]} "
-    f"{random.choice(contrast)} "
-    f"{random.choice(realizations)} "
-    f"{random.choice(loops)}"
-)
+script = " ".join([
+    random.choice(hooks),
+    random.choice(provocations),
+    random.choice(sensory_hits),
+    random.choice(modern_failures),
+    random.choice(modern_failures),
+    random.choice(contrast),
+    random.choice(payoff),
+    random.choice(loops)
+])
 
 with open("script.txt", "w", encoding="utf-8") as f:
-    f.write(script.strip())
+    f.write(script)
 
-print("Generated premium, non-repetitive 35–45s script:")
+print("🔥 High-energy Shorts script generated:")
 print(script)
