@@ -8,7 +8,7 @@ async def main():
     communicate = edge_tts.Communicate(
         TEXT,
         voice="en-US-GuyNeural",
-        rate="+6%",
+        rate="+8%",
         pitch="+2Hz"
     )
 
