@@ -1,15 +1,14 @@
 import subprocess
 import re
-import math
 
 # -----------------------------
-# Load script
+# Load script words
 # -----------------------------
 text = open("script.txt", "r", encoding="utf-8").read().strip()
 words = re.findall(r"\b[\w’']+\b", text)
 
 if not words:
-    raise Exception("No words found in script")
+    raise Exception("No words found")
 
 # -----------------------------
 # Get audio duration
@@ -29,14 +28,13 @@ probe = subprocess.run(
 duration = float(probe.stdout.strip())
 
 # -----------------------------
-# Caption pacing
+# Per-word timing (realistic)
 # -----------------------------
-WORDS_PER_CHUNK = 3        # teleprompter size (2–4 is ideal)
-total_chunks = math.ceil(len(words) / WORDS_PER_CHUNK)
-chunk_duration = duration / total_chunks
+total_words = len(words)
+per_word = duration / total_words   # seconds per word
 
 # -----------------------------
-# ASS header
+# ASS header (LOUD & SAFE)
 # -----------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -47,7 +45,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial Black,92,&H00FFFFFF,&H0000FF00,&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,4,2,2,80,80,260,1
+Style: Default,Impact,102,&H00FFFFFF,&H0000FF00,&H00000000,&H64000000,1,0,0,0,100,100,0,0,1,5,3,2,80,80,300,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -60,30 +58,36 @@ def ts(t):
     return f"{h}:{m:02d}:{s:05.2f}"
 
 # -----------------------------
-# Build teleprompter captions
+# Rolling teleprompter captions
 # -----------------------------
 events = []
 current_time = 0.0
 
-for i in range(0, len(words), WORDS_PER_CHUNK):
-    chunk = words[i:i + WORDS_PER_CHUNK]
+WINDOW = 3  # words visible (prev, current, next)
 
-    # highlight last word in chunk
-    rendered = " ".join(
-        chunk[:-1]
-        + [r"{\c&H0000FF&}" + chunk[-1] + r"{\c&H00FFFFFF&}"]
-    )
-
+for i in range(total_words):
     start = ts(current_time)
-    end = ts(current_time + chunk_duration)
+    end = ts(current_time + per_word)
+
+    prev_word = words[i - 1] if i - 1 >= 0 else ""
+    curr_word = words[i]
+    next_word = words[i + 1] if i + 1 < total_words else ""
+
+    rendered = " ".join(
+        w for w in [
+            prev_word,
+            r"{\c&H0000FF&}" + curr_word + r"{\c&H00FFFFFF&}",
+            next_word
+        ] if w
+    )
 
     events.append(
         f"Dialogue: 0,{start},{end},Default,,0,0,0,,{rendered}"
     )
 
-    current_time += chunk_duration
+    current_time += per_word
 
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("✅ Teleprompter-style captions generated")
+print("✅ Word-synced teleprompter captions generated")
