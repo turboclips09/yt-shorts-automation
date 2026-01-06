@@ -21,16 +21,20 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install requests moviepy edge-tts
+        run: |
+          pip install requests moviepy edge-tts
 
       - name: Generate script
         run: python script.py
 
-      - name: Generate voice
+      - name: Generate raw voice (natural TTS)
         run: python voice.py
 
-      - name: Upload voice artifact
+      - name: Mix voice with background music
+        run: python mix_audio.py
+
+      - name: Upload final mixed voice
         uses: actions/upload-artifact@v4
         with:
-          name: voice
+          name: final-voice
           path: voice.mp3
