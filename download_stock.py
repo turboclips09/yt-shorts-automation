@@ -4,25 +4,28 @@ import random
 
 API_KEY = os.getenv("PIXABAY_API_KEY")
 
+# EXTREMELY STRICT — ONLY CARS
 SEARCH_TERMS = [
-    "car pov driving",
-    "sports car interior driving",
-    "night car driving city",
-    "car tunnel driving",
-    "fast car road",
-    "luxury car cockpit",
-    "steering wheel driving",
-    "high speed car road",
-    "rain night car driving",
-    "car acceleration pov"
+    "supercar driving",
+    "sports car racing",
+    "race car track",
+    "luxury car driving",
+    "hypercar driving",
+    "car acceleration",
+    "car cockpit driving",
+    "car interior driving",
+    "night car racing",
+    "supercar highway"
 ]
 
 os.makedirs("assets/videos", exist_ok=True)
 
 downloaded = 0
 seen_ids = set()
+attempts = 0
 
-while downloaded < 40:
+while downloaded < 40 and attempts < 200:
+    attempts += 1
     query = random.choice(SEARCH_TERMS)
 
     r = requests.get(
@@ -32,7 +35,7 @@ while downloaded < 40:
             "q": query,
             "per_page": 50,
             "safesearch": "true",
-            "order": "latest"   # VERY IMPORTANT
+            "order": "latest"
         }
     ).json()
 
@@ -49,6 +52,13 @@ while downloaded < 40:
         if vid in seen_ids:
             continue
 
+        tags = video.get("tags", "").lower()
+        name = video.get("user", "").lower()
+
+        # 🚫 HARD FILTER — MUST CONTAIN "car"
+        if "car" not in tags:
+            continue
+
         seen_ids.add(vid)
 
         url = video["videos"]["medium"]["url"]
@@ -59,4 +69,4 @@ while downloaded < 40:
 
         downloaded += 1
 
-print(f"🔥 Downloaded {downloaded} high-energy driving videos")
+print(f"🔥 Downloaded {downloaded} CAR-ONLY cinematic videos")
