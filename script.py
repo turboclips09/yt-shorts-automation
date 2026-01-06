@@ -1,48 +1,51 @@
 import random
 import datetime
 
-topics = [
-    "This car was banned in multiple countries",
-    "This supercar failed despite insane specs",
-    "This engine sound scares supercars",
-    "This car company almost went bankrupt",
-    "This luxury car secretly shares parts",
-    "This car was too fast for the road",
-    "This design mistake killed this car",
+hooks = [
+    "Most people don’t notice this.",
+    "This car feels illegal to drive.",
+    "This is why this car feels different.",
+    "This car was built without thinking twice.",
+    "This car doesn’t follow normal rules."
 ]
 
-hooks = [
-    "This car should not exist.",
-    "Most people don’t know this.",
-    "This almost destroyed a company.",
-    "This shocked the entire car industry.",
-    "This car broke the rules.",
+bodies = [
+    "It looks normal at first glance, but once it starts moving, everything changes.",
+    "The engine sound alone tells you this car was not built for comfort.",
+    "Every turn feels aggressive, every acceleration feels intentional.",
+    "This car prioritizes speed and feel over logic and safety.",
+    "It’s the kind of car that rewards confidence, not hesitation."
+]
+
+details = [
+    "The suspension is stiff.",
+    "The acceleration is instant.",
+    "The steering feels raw.",
+    "The exhaust is loud and unapologetic.",
+    "The driving position feels low and focused."
 ]
 
 loops = [
-    "And that’s why this car disappeared.",
-    "That’s why collectors want it today.",
-    "And the ending is even crazier.",
-    "That’s why this car is unforgettable.",
-    "And that’s why it still matters.",
+    "And that’s why driving it feels unforgettable.",
+    "That’s why this car leaves a lasting impression.",
+    "And that’s why people still talk about it.",
+    "That’s why this kind of car is rare today.",
+    "And that’s why this feeling is hard to replace."
 ]
 
 script = f"""
 {random.choice(hooks)}
 
-{random.choice(topics)}.
+{random.choice(bodies)}
 
-Engineered beyond limits.
-Ignored common sense.
-Built before regulations caught up.
+{random.choice(details)}
+{random.choice(details)}
 
 {random.choice(loops)}
 """
 
-today = datetime.datetime.utcnow().strftime("%Y-%m-%d_%H-%M-%S")
-
 with open("script.txt", "w", encoding="utf-8") as f:
-    f.write(script)
+    f.write(script.strip())
 
-print("Generated script:")
+print("Generated stock-friendly script:")
 print(script)
