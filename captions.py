@@ -1,6 +1,7 @@
 import subprocess
 import re
 import math
+import textwrap
 
 # -----------------------------
 # Load script
@@ -9,7 +10,7 @@ text = open("script.txt", "r", encoding="utf-8").read().strip()
 words = re.findall(r"\b[\w’']+\b", text)
 
 if not words:
-    raise Exception("No words found in script")
+    raise Exception("No words found")
 
 # -----------------------------
 # Get audio duration
@@ -29,18 +30,17 @@ probe = subprocess.run(
 duration = float(probe.stdout.strip())
 
 # -----------------------------
-# Caption pacing (KEY FIX)
+# Caption pacing (balanced)
 # -----------------------------
-WORDS_PER_PHRASE = 3          # readable chunk
-HOLD_MULTIPLIER = 1.3         # captions stay longer than speech
-OVERLAP = 0.12                # smooth transitions
-
+WORDS_PER_PHRASE = 3
+READABILITY_MULTIPLIER = 1.25   # captions stay longer than spoken
 total_phrases = math.ceil(len(words) / WORDS_PER_PHRASE)
-base_phrase_time = duration / total_phrases
-phrase_time = base_phrase_time * HOLD_MULTIPLIER
+
+spoken_phrase_time = duration / total_phrases
+caption_time = spoken_phrase_time * READABILITY_MULTIPLIER
 
 # -----------------------------
-# ASS header (LOUD BUT CLEAN)
+# ASS header (STYLISH + SAFE)
 # -----------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -51,7 +51,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Impact,100,&H00FFFFFF,&H0000FF00,&H00000000,&H64000000,1,0,0,0,100,100,1,0,1,5,3,2,80,80,300,1
+Style: Default,Arial Black,96,&H00FFFFFF,&H0000FF00,&H00000000,&H64000000,1,0,0,0,100,100,2,0,1,4,2,2,80,80,260,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -64,7 +64,7 @@ def ts(t):
     return f"{h}:{m:02d}:{s:05.2f}"
 
 # -----------------------------
-# Build captions
+# Build captions (NO OVERLAP)
 # -----------------------------
 events = []
 current_time = 0.0
@@ -72,24 +72,28 @@ current_time = 0.0
 for i in range(0, len(words), WORDS_PER_PHRASE):
     phrase = words[i:i + WORDS_PER_PHRASE]
 
-    # highlight middle word (feels most natural)
+    # Highlight middle word
     mid = len(phrase) // 2
-    rendered = " ".join(
-        phrase[:mid]
-        + [r"{\c&H0000FF&}" + phrase[mid] + r"{\c&H00FFFFFF&}"]
-        + phrase[mid + 1:]
-    )
+    phrase[mid] = r"{\c&H0000FF&}" + phrase[mid] + r"{\c&H00FFFFFF&}"
 
-    start = ts(max(0, current_time - OVERLAP))
-    end = ts(current_time + phrase_time)
+    text_line = " ".join(phrase)
+
+    # Hard wrap to max 2 lines
+    wrapped = textwrap.fill(text_line, width=18)
+    lines = wrapped.split("\n")[:2]
+    rendered = r"\N".join(lines)
+
+    start = ts(current_time)
+    end = ts(current_time + caption_time)
 
     events.append(
         f"Dialogue: 0,{start},{end},Default,,0,0,0,,{rendered}"
     )
 
-    current_time += base_phrase_time
+    # IMPORTANT: next caption starts AFTER this ends
+    current_time += spoken_phrase_time
 
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("✅ Smooth, speech-matched captions generated")
+print("✅ Clean, non-stacking captions generated")
