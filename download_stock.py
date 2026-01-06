@@ -5,65 +5,88 @@ import time
 
 API_KEY = os.getenv("PIXABAY_API_KEY")
 
-# VERY PRECISE, CAR-ONLY SEARCH TERMS
+# EXTREMELY STRICT CAR-ONLY SEARCH TERMS
 SEARCH_TERMS = [
     "supercar driving",
     "sports car racing",
     "race car track",
-    "supercar highway",
-    "car drifting",
-    "drift car smoke",
+    "drift car racing",
+    "car drifting smoke",
     "racing car POV",
     "car cockpit POV",
-    "luxury sports car",
+    "supercar acceleration",
     "hypercar driving",
     "night car racing",
-    "supercar acceleration",
-    "fast car road",
+    "luxury sports car driving",
     "track racing cars",
+    "supercar highway",
+    "race car onboard",
     "drift racing cars"
 ]
 
-# HARD FILTER WORDS (must appear in tags)
+# REQUIRED WORDS — MUST APPEAR IN TAGS
 REQUIRED_KEYWORDS = [
     "car",
     "cars",
     "supercar",
-    "racing",
     "race",
+    "racing",
     "drift",
     "drifting",
-    "automobile"
+    "automobile",
+    "vehicle"
 ]
 
-os.makedirs("assets/videos", exist_ok=True)
+# BANNED WORDS — IF PRESENT, REJECT
+BANNED_KEYWORDS = [
+    "mountain",
+    "nature",
+    "forest",
+    "landscape",
+    "scenery",
+    "road",
+    "highway",
+    "city",
+    "traffic",
+    "sky",
+    "cloud",
+    "cloth",
+    "fabric",
+    "abstract",
+    "background",
+    "timelapse"
+]
 
 TARGET_COUNT = 50
+os.makedirs("assets/videos", exist_ok=True)
+
 downloaded = 0
 seen_ids = set()
 attempts = 0
 
-while downloaded < TARGET_COUNT and attempts < 300:
+while downloaded < TARGET_COUNT and attempts < 400:
     attempts += 1
     query = random.choice(SEARCH_TERMS)
 
-    response = requests.get(
-        "https://pixabay.com/api/videos/",
-        params={
-            "key": API_KEY,
-            "q": query,
-            "per_page": 50,
-            "safesearch": "true",
-            "order": "latest"
-        },
-        timeout=10
-    )
+    try:
+        response = requests.get(
+            "https://pixabay.com/api/videos/",
+            params={
+                "key": API_KEY,
+                "q": query,
+                "per_page": 50,
+                "safesearch": "true",
+                "order": "latest"
+            },
+            timeout=12
+        )
+    except:
+        continue
 
     if response.status_code != 200:
         continue
 
-    data = response.json()
-    hits = data.get("hits", [])
+    hits = response.json().get("hits", [])
     if not hits:
         continue
 
@@ -79,29 +102,28 @@ while downloaded < TARGET_COUNT and attempts < 300:
 
         tags = video.get("tags", "").lower()
 
-        # 🚫 HARD REJECT IF NOT CAR-RELATED
+        # MUST contain car-related keywords
         if not any(word in tags for word in REQUIRED_KEYWORDS):
             continue
 
-        # Prefer higher resolution if available
-        video_files = video.get("videos", {})
-        chosen = (
-            video_files.get("large") or
-            video_files.get("medium") or
-            video_files.get("small")
-        )
-
-        if not chosen:
+        # MUST NOT contain banned keywords
+        if any(word in tags for word in BANNED_KEYWORDS):
             continue
 
-        url = chosen.get("url")
-        if not url:
+        videos = video.get("videos", {})
+        chosen = (
+            videos.get("large") or
+            videos.get("medium") or
+            videos.get("small")
+        )
+
+        if not chosen or not chosen.get("url"):
             continue
 
         path = f"assets/videos/v{downloaded}.mp4"
 
         try:
-            with requests.get(url, stream=True, timeout=15) as r:
+            with requests.get(chosen["url"], stream=True, timeout=20) as r:
                 with open(path, "wb") as f:
                     for chunk in r.iter_content(chunk_size=8192):
                         if chunk:
@@ -113,7 +135,6 @@ while downloaded < TARGET_COUNT and attempts < 300:
         downloaded += 1
         print(f"Downloaded {downloaded}/{TARGET_COUNT}")
 
-        # Small delay to avoid API throttling
-        time.sleep(0.2)
+        time.sleep(0.15)  # avoid API throttling
 
-print(f"🔥 DONE: {downloaded} high-quality car videos downloaded")
+print(f"🔥 DONE: {downloaded} refined, car-only cinematic videos downloaded")
