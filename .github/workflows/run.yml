@@ -76,4 +76,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: short-video
-          path: short.mp4
+          path: base.mp4
