@@ -26,8 +26,11 @@ jobs:
       - name: Generate script
         run: python script.py
 
-      - name: Upload script as artifact
+      - name: Generate voice
+        run: python voice.py
+
+      - name: Upload voice artifact
         uses: actions/upload-artifact@v4
         with:
-          name: generated-script
-          path: script.txt
+          name: voice
+          path: voice.mp3
