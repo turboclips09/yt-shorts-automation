@@ -20,9 +20,15 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      # 🔧 CRITICAL: Install FFmpeg first
+      - name: Install FFmpeg
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      # 🔧 Install Python dependencies cleanly
+      - name: Install Python dependencies
         run: |
-          pip install requests moviepy edge-tts
+          python -m pip install --upgrade pip
+          pip install requests edge-tts moviepy imageio imageio-ffmpeg
 
       - name: Generate script
         run: python script.py
