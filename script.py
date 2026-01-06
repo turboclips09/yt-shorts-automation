@@ -1,74 +1,82 @@
 import random
 
+def pick(pool):
+    return random.choice(pool)
+
 hooks = [
-    "Modern cars are faster than ever, yet somehow feel boring.",
-    "This sounds crazy, but older cars felt faster than modern ones.",
-    "Here’s why modern cars killed driving excitement.",
-    "This is why driving doesn’t feel intense anymore.",
-    "Cars didn’t always feel this numb."
+    "Modern cars are insanely fast, but they feel dead.",
+    "This is why driving doesn’t feel thrilling anymore.",
+    "Cars today are quicker than ever, yet somehow boring.",
+    "Driving used to feel dangerous. Now it feels numb.",
+    "Here’s why modern cars killed excitement."
 ]
 
-provocations = [
-    "Speed today is hidden on purpose.",
-    "Modern cars are designed to calm you down.",
-    "Driving is no longer supposed to scare you.",
-    "Feeling speed is now considered a problem.",
-    "Excitement has been engineered out."
+opinions = [
+    "Speed is no longer meant to scare you.",
+    "Modern cars are built to calm you down.",
+    "Feeling speed is now considered a flaw.",
+    "Excitement has been engineered out.",
+    "Driving is designed to feel safe, not intense."
 ]
 
-sensory_hits = [
-    "Your brain feels speed through sound, vibration, and resistance.",
-    "Noise, steering weight, and feedback tell your body how fast you’re moving.",
-    "Your senses react long before your eyes check the speedometer.",
-    "Speed is something you feel, not something you read.",
-    "Raw feedback creates tension."
+sensory = [
+    "Your body feels speed through noise, vibration, and resistance.",
+    "Sound and steering tell your brain how fast you’re moving.",
+    "You feel speed long before you see the number.",
+    "Raw feedback creates tension.",
+    "Fear is part of excitement."
 ]
 
-modern_failures = [
-    "Heavy insulation kills sound.",
+tech_filters = [
     "Electronic steering removes resistance.",
-    "Computers smooth every input.",
-    "Stability systems correct everything.",
-    "Modern suspension isolates you from the road."
+    "Heavy insulation kills engine noise.",
+    "Computers smooth every movement.",
+    "Stability systems interfere constantly.",
+    "Modern suspension isolates the road."
 ]
 
-contrast = [
+old_cars = [
     "Older cars didn’t protect you from speed.",
     "There was no filter between you and the road.",
-    "Every vibration came straight to the driver.",
-    "Even 60 felt intense.",
-    "Driving demanded attention."
+    "Every vibration reached the driver.",
+    "Even moderate speeds felt intense.",
+    "Driving demanded focus."
 ]
 
-payoff = [
+payoffs = [
     "That’s why slow cars used to feel exciting.",
     "That’s why older cars felt alive.",
     "That’s why modern speed feels empty.",
-    "That’s why people miss how cars used to feel.",
-    "That’s why excitement isn’t about numbers."
+    "That’s why people miss old driving.",
+    "That’s why numbers don’t equal excitement."
 ]
 
 loops = [
     "Once you notice this, modern cars won’t feel the same.",
-    "After this, you’ll understand why driving feels different.",
+    "After this, you’ll feel it every time you drive.",
     "And now you know what’s missing.",
-    "You’ll feel this every time you drive.",
-    "That realization changes everything."
+    "That realization changes everything.",
+    "You won’t unfeel this."
 ]
 
-script = " ".join([
-    random.choice(hooks),
-    random.choice(provocations),
-    random.choice(sensory_hits),
-    random.choice(modern_failures),
-    random.choice(modern_failures),
-    random.choice(contrast),
-    random.choice(payoff),
-    random.choice(loops)
-])
+# Build script with guaranteed uniqueness
+script_parts = [
+    pick(hooks),
+    pick(opinions),
+    pick(sensory),
+    pick(tech_filters),
+    pick(old_cars),
+    pick(payoffs),
+    pick(loops)
+]
+
+# Ensure no duplicates (extra safety)
+script_parts = list(dict.fromkeys(script_parts))
+
+script = " ".join(script_parts)
 
 with open("script.txt", "w", encoding="utf-8") as f:
     f.write(script)
 
-print("🔥 High-energy Shorts script generated:")
+print("🔥 High-energy, non-repetitive Shorts script:")
 print(script)
