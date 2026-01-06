@@ -14,10 +14,10 @@ print(f"Found {len(my_videos)} personal videos")
 print(f"Found {len(pixabay_videos)} pixabay videos")
 
 if len(pixabay_videos) == 0:
-    raise Exception("No Pixabay videos found in assets/videos")
+    raise Exception("No Pixabay videos found")
 
 # =========================
-# GET AUDIO DURATION
+# AUDIO DURATION
 # =========================
 probe = sp.run(
     [
@@ -32,37 +32,22 @@ probe = sp.run(
 
 audio_duration = float(probe.stdout.strip())
 
-# =========================
-# CLIP CALCULATION
-# =========================
-clip_duration = 1.6  # seconds per visual
+clip_duration = 1.6
 clips_needed = math.ceil(audio_duration / clip_duration)
 
 # =========================
-# CALCULATE 70 / 30 MIX
+# 70 / 30 MIX
 # =========================
-if len(my_videos) >= 3:
-    my_count = int(clips_needed * 0.7)
-else:
-    my_count = 0
-
+my_count = int(clips_needed * 0.7) if len(my_videos) >= 3 else 0
 pixabay_count = clips_needed - my_count
 
-# =========================
-# RANDOM SELECTION
-# =========================
 random.shuffle(my_videos)
 random.shuffle(pixabay_videos)
 
-selected = []
-
-selected.extend(my_videos[:my_count])
-selected.extend(pixabay_videos[:pixabay_count])
-
-# Shuffle combined list
+selected = my_videos[:my_count] + pixabay_videos[:pixabay_count]
 random.shuffle(selected)
 
-# Prevent immediate repeats
+# Avoid back-to-back duplicates
 final_sequence = []
 last = None
 for v in selected:
@@ -71,11 +56,10 @@ for v in selected:
         last = v
 
 # =========================
-# BUILD FFMPEG COMMAND
+# FFMPEG BUILD
 # =========================
 cmd = ["ffmpeg", "-y"]
 
-# Skip first frames to avoid black flashes
 for v in final_sequence:
     cmd.extend(["-ss", "0.4", "-t", str(clip_duration), "-i", v])
 
@@ -85,17 +69,15 @@ for i in range(len(final_sequence)):
         f"[{i}:v]"
         f"scale=1080:1920:force_original_aspect_ratio=increase,"
         f"crop=1080:1920,"
-        f"setsar=1,"
-        f"fps=30,"
-        f"format=yuv420p"
+        f"setsar=1,fps=30,format=yuv420p"
         f"[v{i}]"
     )
 
-concat_inputs = "".join(f"[v{i}]" for i in range(len(final_sequence)))
+concat = "".join(f"[v{i}]" for i in range(len(final_sequence)))
 
 filter_complex = (
     ";".join(filters)
-    + f";{concat_inputs}concat=n={len(final_sequence)}:v=1:a=0[outv]"
+    + f";{concat}concat=n={len(final_sequence)}:v=1:a=0[outv]"
 )
 
 cmd.extend([
@@ -104,15 +86,12 @@ cmd.extend([
     "-map", "[outv]",
     "-map", str(len(final_sequence)),
     "-shortest",
+    "-vf", "ass=captions.ass",
     "-c:v", "libx264",
     "-pix_fmt", "yuv420p",
     "-c:a", "aac",
-    "base.mp4"
+    "final.mp4"
 ])
 
-# =========================
-# RUN
-# =========================
 subprocess.run(cmd, check=True)
-
-print("✅ Final base video created successfully")
+print("✅ final.mp4 created with live captions")
