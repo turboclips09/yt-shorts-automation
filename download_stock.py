@@ -5,14 +5,14 @@ import random
 API_KEY = os.getenv("PIXABAY_API_KEY")
 
 SEARCH_TERMS = [
-    "sports car driving",
-    "luxury car driving",
-    "supercar highway",
-    "car interior driving",
-    "night car driving",
+    "car pov driving",
+    "sports car interior driving",
+    "night car driving city",
     "car tunnel driving",
-    "engine revving car",
-    "fast car road"
+    "luxury car cockpit",
+    "steering wheel driving",
+    "rain night car driving",
+    "fast car road cinematic"
 ]
 
 os.makedirs("assets/videos", exist_ok=True)
@@ -20,7 +20,7 @@ os.makedirs("assets/videos", exist_ok=True)
 downloaded = 0
 attempts = 0
 
-while downloaded < 12 and attempts < 40:
+while downloaded < 15 and attempts < 50:
     attempts += 1
     query = random.choice(SEARCH_TERMS)
 
@@ -34,16 +34,15 @@ while downloaded < 12 and attempts < 40:
         }
     ).json()
 
-    if "hits" not in r or len(r["hits"]) == 0:
+    if not r.get("hits"):
         continue
 
     video = random.choice(r["hits"])
     url = video["videos"]["medium"]["url"]
 
-    path = f"assets/videos/v{downloaded}.mp4"
-    with open(path, "wb") as f:
+    with open(f"assets/videos/v{downloaded}.mp4", "wb") as f:
         f.write(requests.get(url).content)
 
     downloaded += 1
 
-print(f"Downloaded {downloaded} high-quality driving videos")
+print(f"✅ Downloaded {downloaded} cinematic driving videos")
