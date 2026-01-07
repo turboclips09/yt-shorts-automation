@@ -1,9 +1,12 @@
 import json
-import math
+import os
 
-WORDS_PER_CHUNK = 3          # 2–4 is ideal
+WORDS_PER_CHUNK = 3          # 2–4 ideal for Shorts
 LEAD_IN_MS = 120             # show slightly before audio
 MIN_DURATION_MS = 220        # readability floor
+
+if not os.path.exists("words.json"):
+    raise RuntimeError("❌ words.json not found — voice.py must run first")
 
 with open("words.json", "r", encoding="utf-8") as f:
     words = json.load(f)
@@ -33,7 +36,6 @@ i = 0
 
 while i < len(words):
     chunk = words[i:i + WORDS_PER_CHUNK]
-
     text = " ".join(w["word"] for w in chunk)
 
     start = chunk[0]["offset"] - LEAD_IN_MS
@@ -51,4 +53,4 @@ while i < len(words):
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass_header + "\n".join(events))
 
-print("✅ Captions generated (grouped, synced, no overlap)")
+print("✅ captions.ass generated (synced, readable, no overlap)")
