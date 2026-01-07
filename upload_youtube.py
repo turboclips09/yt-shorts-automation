@@ -7,17 +7,20 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 # -------------------------------------------------
-# ENV
+# ENV VARIABLES
 # -------------------------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
+if not all([CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN]):
+    raise RuntimeError("❌ Missing YouTube OAuth secrets")
+
 # -------------------------------------------------
 # AUTH
 # -------------------------------------------------
 creds = Credentials(
-    None,
+    token=None,
     refresh_token=REFRESH_TOKEN,
     token_uri="https://oauth2.googleapis.com/token",
     client_id=CLIENT_ID,
@@ -28,6 +31,9 @@ creds = Credentials(
     ]
 )
 
+# 🔍 DEBUG — THIS IS WHAT WE ARE VERIFYING
+print("Scopes:", creds.scopes)
+
 youtube = build("youtube", "v3", credentials=creds)
 
 # -------------------------------------------------
@@ -37,7 +43,7 @@ with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
 # -------------------------------------------------
-# RANDOM SCHEDULE
+# RANDOM SCHEDULE (1–18 HOURS FROM NOW)
 # -------------------------------------------------
 publish_at = (
     datetime.datetime.utcnow()
@@ -45,7 +51,7 @@ publish_at = (
 ).isoformat("T") + "Z"
 
 # -------------------------------------------------
-# UPLOAD
+# UPLOAD VIDEO
 # -------------------------------------------------
 upload = youtube.videos().insert(
     part="snippet,status",
@@ -54,7 +60,7 @@ upload = youtube.videos().insert(
             "title": meta["title"],
             "description": meta["description"],
             "tags": meta["tags"],
-            "categoryId": "24"
+            "categoryId": "24"  # Entertainment
         },
         "status": {
             "privacyStatus": "private",
@@ -67,42 +73,44 @@ upload = youtube.videos().insert(
 
 video = upload.execute()
 video_id = video["id"]
+
 print("✅ Uploaded & scheduled:", video_id)
 
 # -------------------------------------------------
-# POST COMMENT
+# COMMENT + PIN (SAFE BLOCK)
 # -------------------------------------------------
-comment = youtube.commentThreads().insert(
-    part="snippet",
-    body={
-        "snippet": {
-            "videoId": video_id,
-            "topLevelComment": {
-                "snippet": {
-                    "textOriginal": meta.get(
-                        "comment",
-                        "Do you agree with this, or am I wrong? 👇"
-                    )
+try:
+    comment = youtube.commentThreads().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "videoId": video_id,
+                "topLevelComment": {
+                    "snippet": {
+                        "textOriginal": meta.get(
+                            "comment",
+                            "Do you agree with this, or am I wrong? 👇"
+                        )
+                    }
                 }
             }
         }
-    }
-).execute()
+    ).execute()
 
-thread_id = comment["id"]
-print("💬 Comment posted")
+    thread_id = comment["id"]
 
-# -------------------------------------------------
-# PIN COMMENT (REAL WAY)
-# -------------------------------------------------
-youtube.commentThreads().update(
-    part="snippet",
-    body={
-        "id": thread_id,
-        "snippet": {
-            "isPinned": True
+    youtube.commentThreads().update(
+        part="snippet",
+        body={
+            "id": thread_id,
+            "snippet": {
+                "isPinned": True
+            }
         }
-    }
-).execute()
+    ).execute()
 
-print("📌 Comment pinned successfully")
+    print("📌 Comment posted and pinned")
+
+except Exception as e:
+    print("⚠️ Comment failed, upload still successful")
+    print(e)
