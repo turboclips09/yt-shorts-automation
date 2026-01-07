@@ -1,16 +1,15 @@
 import json
 import re
 import math
-import subprocess
 
 # -------------------------------------------------
-# Load inputs
+# Load script
 # -------------------------------------------------
 text = open("script.txt", "r", encoding="utf-8").read().strip()
 words = re.findall(r"\b[\w’']+\b", text.upper())
 
 if not words:
-    raise Exception("❌ No words found")
+    raise Exception("❌ No words found in script")
 
 with open("voice_meta.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
@@ -18,22 +17,22 @@ with open("voice_meta.json", "r", encoding="utf-8") as f:
 voice_duration = meta["duration"]
 
 # -------------------------------------------------
-# Caption pacing (speech-locked)
+# Caption pacing (CALMER + MORE HUMAN)
 # -------------------------------------------------
 WORDS_PER_PHRASE = 2
-TOTAL_PHRASES = math.ceil(len(words) / WORDS_PER_PHRASE)
 
-# Exact pacing
-phrase_time = voice_duration / TOTAL_PHRASES
+total_phrases = math.ceil(len(words) / WORDS_PER_PHRASE)
 
-# Human clamp
-phrase_time = max(0.55, min(0.85, phrase_time))
+phrase_time = voice_duration / total_phrases
 
-# Anticipation (feels synced)
-ANTICIPATION = 0.02  # 50ms lead
+# 🔥 Slower + more readable
+phrase_time = max(0.65, min(0.95, phrase_time))
+
+# 🔥 Delay captions slightly (wait for voice)
+ANTICIPATION = -0.06  # 60ms delay
 
 # -------------------------------------------------
-# ASS header (Shorts premium)
+# ASS Header (BIG, BOLD, SHORTS-READY)
 # -------------------------------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -44,7 +43,8 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Poppins ExtraBold,132,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
+
+Style: Default,Poppins ExtraBold,136,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -68,7 +68,13 @@ for i in range(0, len(words), WORDS_PER_PHRASE):
 
     rendered = []
     for idx, w in enumerate(phrase):
-        if idx == hi:
+
+        # 🔥 MAKE NUMBERS POP HARDER
+        if w in ["NUMBER", "ONE", "TWO", "THREE", "FOUR", "FIVE"]:
+            rendered.append(
+                r"{\fs160\c&H0000E6FF&}" + w + r"{\fs136\c&H00FFFFFF&}"
+            )
+        elif idx == hi:
             rendered.append(
                 r"{\c&H0000E6FF&\fscx92\fscy92\t(0,160,\fscx100\fscy100)}"
                 + w +
@@ -77,27 +83,27 @@ for i in range(0, len(words), WORDS_PER_PHRASE):
         else:
             rendered.append(w)
 
-    text = " ".join(rendered)
+    text_line = " ".join(rendered)
 
-    start = max(0, current_time - ANTICIPATION)
+    start = max(0, current_time + ANTICIPATION)
     end = min(current_time + phrase_time, voice_duration)
 
     events.append(
-        f"Dialogue: 0,{ts(start)},{ts(end)},Default,,0,0,0,,{text}"
+        f"Dialogue: 0,{ts(start)},{ts(end)},Default,,0,0,0,,{text_line}"
     )
 
     current_time += phrase_time
 
-# Force last caption to end with voice
+# 🔒 Force last caption to end with voice
 if events:
     last = events[-1].split(",")
     last[2] = ts(voice_duration)
     events[-1] = ",".join(last)
 
 # -------------------------------------------------
-# Write ASS
+# Write captions
 # -------------------------------------------------
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("✅ Captions perceptually synced to voice")
+print("✅ Captions updated: bigger, slower, numbered, cleaner sync")
