@@ -30,7 +30,7 @@ phrase_time = voice_duration / TOTAL_PHRASES
 phrase_time = max(0.55, min(0.85, phrase_time))
 
 # Anticipation (feels synced)
-ANTICIPATION = 0.05  # 50ms lead
+ANTICIPATION = 0.02  # 50ms lead
 
 # -------------------------------------------------
 # ASS header (Shorts premium)
