@@ -44,7 +44,7 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 
-Style: Default,Poppins ExtraBold,136,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
+Style: Default,Poppins ExtraBold,139,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
