@@ -2,35 +2,99 @@ name: yt-shorts-automation
 
 on:
   workflow_dispatch:
+  schedule:
+    # Two runs per day (videos publish at random times internally)
+    - cron: "0 2 * * *"
+    - cron: "0 14 * * *"
 
 jobs:
-  build:
+  build-and-upload:
     runs-on: ubuntu-latest
-    env:
-      PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
 
     steps:
-      - uses: actions/checkout@v4
+      # -------------------------------
+      # Checkout repository
+      # -------------------------------
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      # -------------------------------
+      # Setup Python
+      # -------------------------------
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
 
-      - run: sudo apt update && sudo apt install -y ffmpeg
-      - run: pip install edge-tts requests
+      # -------------------------------
+      # Install system dependencies
+      # -------------------------------
+      - name: Install FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
 
-      - run: python script.py
-      - run: python voice.py
-      - run: python captions.py
-      - run: python download_stock.py
-      - run: python build_video_ffmpeg.py
+      # -------------------------------
+      # Install Python dependencies
+      # -------------------------------
+      - name: Install Python packages
+        run: |
+          pip install edge-tts requests \
+          google-auth google-auth-oauthlib google-api-python-client
 
-      - run: zip final.zip final.mp4
+      # -------------------------------
+      # Generate script
+      # -------------------------------
+      - name: Generate script
+        run: python script.py
 
-      - uses: actions/upload-artifact@v4
+      # -------------------------------
+      # Generate voice + timings
+      # -------------------------------
+      - name: Generate voice
+        run: python voice.py
+
+      # -------------------------------
+      # Generate captions
+      # -------------------------------
+      - name: Generate captions
+        run: python captions.py
+
+      # -------------------------------
+      # Download stock videos
+      # -------------------------------
+      - name: Download Pixabay videos
+        env:
+          PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
+        run: python download_stock.py
+
+      # -------------------------------
+      # Build final video
+      # -------------------------------
+      - name: Build video
+        run: python build_video_ffmpeg.py
+
+      # -------------------------------
+      # Generate title / description / tags
+      # -------------------------------
+      - name: Generate metadata
+        run: python metadata.py
+
+      # -------------------------------
+      # Upload to YouTube
+      # -------------------------------
+      - name: Upload to YouTube
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
+        run: python upload_youtube.py
+
+      # -------------------------------
+      # Save output as artifact (optional)
+      # -------------------------------
+      - name: Upload video artifact
+        uses: actions/upload-artifact@v4
         with:
           name: youtube-short
-          path: final.zip
-                - run: python metadata.py
-      - run: python upload_youtube.py
-
+          path: final.mp4
