@@ -102,7 +102,7 @@ filter_complex = (
     + ";"
     + f"{video_chain}concat=n={len(selected)}:v=1:a=0[base]"
     + ";"
-    + "[base]ass=captions.ass:fontsdir=/usr/share/fonts[outv]"
+    + "[base]ass=captions.ass:fontsdir=assets/fonts:/usr/share/fonts[outv]"
     + ";"
     + f"[{voice_index}:a]volume=1.0[a_voice]"
     + ";"
