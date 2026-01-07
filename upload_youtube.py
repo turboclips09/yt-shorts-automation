@@ -7,20 +7,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 # -------------------------------------------------
-# ENV VARIABLES
+# ENV
 # -------------------------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
-if not all([CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN]):
-    raise RuntimeError("❌ Missing YouTube OAuth secrets")
-
 # -------------------------------------------------
 # AUTH
 # -------------------------------------------------
 creds = Credentials(
-    token=None,
+    None,
     refresh_token=REFRESH_TOKEN,
     token_uri="https://oauth2.googleapis.com/token",
     client_id=CLIENT_ID,
@@ -31,7 +28,6 @@ creds = Credentials(
     ]
 )
 
-# 🔍 DEBUG — THIS IS WHAT WE ARE VERIFYING
 print("Scopes:", creds.scopes)
 
 youtube = build("youtube", "v3", credentials=creds)
@@ -43,15 +39,15 @@ with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
 # -------------------------------------------------
-# RANDOM SCHEDULE (1–18 HOURS FROM NOW)
+# RANDOM SCHEDULE TIME (UTC, FUTURE)
 # -------------------------------------------------
 publish_at = (
     datetime.datetime.utcnow()
     + datetime.timedelta(hours=random.randint(1, 18))
-).isoformat("T") + "Z"
+).replace(microsecond=0).isoformat() + "Z"
 
 # -------------------------------------------------
-# UPLOAD VIDEO
+# STEP 1 — UPLOAD AS UNLISTED (NO publishAt)
 # -------------------------------------------------
 upload = youtube.videos().insert(
     part="snippet,status",
@@ -60,11 +56,10 @@ upload = youtube.videos().insert(
             "title": meta["title"],
             "description": meta["description"],
             "tags": meta["tags"],
-            "categoryId": "24"  # Entertainment
+            "categoryId": "24"
         },
         "status": {
             "privacyStatus": "unlisted",
-            "publishAt": publish_at,
             "selfDeclaredMadeForKids": False
         }
     },
@@ -74,10 +69,10 @@ upload = youtube.videos().insert(
 video = upload.execute()
 video_id = video["id"]
 
-print("✅ Uploaded & scheduled:", video_id)
+print("✅ Uploaded (unlisted):", video_id)
 
 # -------------------------------------------------
-# COMMENT + PIN (SAFE BLOCK)
+# COMMENT + PIN
 # -------------------------------------------------
 try:
     comment = youtube.commentThreads().insert(
@@ -103,14 +98,29 @@ try:
         part="snippet",
         body={
             "id": thread_id,
-            "snippet": {
-                "isPinned": True
-            }
+            "snippet": {"isPinned": True}
         }
     ).execute()
 
     print("📌 Comment posted and pinned")
 
 except Exception as e:
-    print("⚠️ Comment failed, upload still successful")
+    print("⚠️ Comment failed (continuing)")
     print(e)
+
+# -------------------------------------------------
+# STEP 2 — SCHEDULE THE VIDEO (PRIVATE + publishAt)
+# -------------------------------------------------
+youtube.videos().update(
+    part="status",
+    body={
+        "id": video_id,
+        "status": {
+            "privacyStatus": "private",
+            "publishAt": publish_at,
+            "selfDeclaredMadeForKids": False
+        }
+    }
+).execute()
+
+print("⏰ Video scheduled for:", publish_at)
