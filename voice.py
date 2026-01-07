@@ -1,5 +1,6 @@
 import asyncio
 import edge_tts
+import subprocess
 import json
 
 TEXT = open("script.txt", "r", encoding="utf-8").read()
@@ -9,40 +10,41 @@ RATE = "+8%"
 PITCH = "+2Hz"
 
 async def main():
-    communicator = edge_tts.Communicate(
+    tts = edge_tts.Communicate(
         TEXT,
         VOICE,
         rate=RATE,
         pitch=PITCH
     )
 
-    words = []
-    audio_chunks = []
+    await tts.save("voice.mp3")
 
-    async for event in communicator.stream():
-        if event["type"] == "audio":
-            audio_chunks.append(event["data"])
+    # Get duration
+    probe = subprocess.run(
+        [
+            "ffprobe",
+            "-v", "error",
+            "-show_entries", "format=duration",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            "voice.mp3"
+        ],
+        capture_output=True,
+        text=True
+    )
 
-        elif event["type"] == "WordBoundary":
-            words.append({
-                "word": event["text"],
-                "offset": event["offset"],
-                "duration": event["duration"]
-            })
+    duration = float(probe.stdout.strip())
 
-    # Save audio
-    with open("voice.mp3", "wb") as f:
-        for chunk in audio_chunks:
-            f.write(chunk)
+    # Save metadata for captions
+    meta = {
+        "duration": duration,
+        "rate": RATE,
+        "voice": VOICE
+    }
 
-    if not words:
-        raise Exception("❌ No word boundaries received from Edge TTS")
+    with open("voice_meta.json", "w", encoding="utf-8") as f:
+        json.dump(meta, f, indent=2)
 
-    # Save word timings
-    with open("words.json", "w", encoding="utf-8") as f:
-        json.dump(words, f, indent=2)
-
-    print(f"✅ voice.mp3 created")
-    print(f"✅ words.json created with {len(words)} words")
+    print(f"✅ voice.mp3 created ({duration:.2f}s)")
+    print("⚠️ Word boundaries unavailable — using perceptual sync")
 
 asyncio.run(main())
