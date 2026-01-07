@@ -7,20 +7,17 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
 # -------------------------------------------------
-# ENV VARIABLES (FROM GITHUB SECRETS)
+# ENV
 # -------------------------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
-if not all([CLIENT_ID, CLIENT_SECRET, REFRESH_TOKEN]):
-    raise RuntimeError("❌ Missing YouTube OAuth secrets")
-
 # -------------------------------------------------
 # AUTH
 # -------------------------------------------------
 creds = Credentials(
-    token=None,
+    None,
     refresh_token=REFRESH_TOKEN,
     token_uri="https://oauth2.googleapis.com/token",
     client_id=CLIENT_ID,
@@ -40,7 +37,7 @@ with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
 # -------------------------------------------------
-# RANDOM SCHEDULE (1–18 HOURS FROM NOW)
+# RANDOM SCHEDULE
 # -------------------------------------------------
 publish_at = (
     datetime.datetime.utcnow()
@@ -48,16 +45,16 @@ publish_at = (
 ).isoformat("T") + "Z"
 
 # -------------------------------------------------
-# UPLOAD VIDEO
+# UPLOAD
 # -------------------------------------------------
-upload_request = youtube.videos().insert(
+upload = youtube.videos().insert(
     part="snippet,status",
     body={
         "snippet": {
             "title": meta["title"],
             "description": meta["description"],
             "tags": meta["tags"],
-            "categoryId": "24"  # Entertainment
+            "categoryId": "24"
         },
         "status": {
             "privacyStatus": "private",
@@ -65,61 +62,47 @@ upload_request = youtube.videos().insert(
             "selfDeclaredMadeForKids": False
         }
     },
-    media_body=MediaFileUpload(
-        "final.mp4",
-        resumable=True,
-        chunksize=-1
-    )
+    media_body=MediaFileUpload("final.mp4", resumable=True)
 )
 
-upload_response = upload_request.execute()
-video_id = upload_response["id"]
-
-print(f"✅ Uploaded & scheduled: {video_id}")
+video = upload.execute()
+video_id = video["id"]
+print("✅ Uploaded & scheduled:", video_id)
 
 # -------------------------------------------------
 # POST COMMENT
 # -------------------------------------------------
-comment_text = meta.get(
-    "comment",
-    "Do you agree with this take, or am I wrong? 👇"
-)
-
-comment_response = youtube.commentThreads().insert(
+comment = youtube.commentThreads().insert(
     part="snippet",
     body={
         "snippet": {
             "videoId": video_id,
             "topLevelComment": {
                 "snippet": {
-                    "textOriginal": comment_text
+                    "textOriginal": meta.get(
+                        "comment",
+                        "Do you agree with this, or am I wrong? 👇"
+                    )
                 }
             }
         }
     }
 ).execute()
 
-comment_id = comment_response["id"]
-
+thread_id = comment["id"]
 print("💬 Comment posted")
 
 # -------------------------------------------------
-# PIN COMMENT
+# PIN COMMENT (REAL WAY)
 # -------------------------------------------------
-youtube.comments().setModerationStatus(
-    id=comment_id,
-    moderationStatus="published",
-    banAuthor=False
-).execute()
-
-youtube.comments().markAsSpam(
-    id=comment_id
-).execute()
-
-youtube.comments().setModerationStatus(
-    id=comment_id,
-    moderationStatus="published",
-    banAuthor=False
+youtube.commentThreads().update(
+    part="snippet",
+    body={
+        "id": thread_id,
+        "snippet": {
+            "isPinned": True
+        }
+    }
 ).execute()
 
 print("📌 Comment pinned successfully")
