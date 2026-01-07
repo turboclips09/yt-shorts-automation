@@ -17,6 +17,7 @@ REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 # AUTH
 # -------------------------------------------------
 creds = Credentials(
+    print("Scopes in use:", creds.scopes)
     None,
     refresh_token=REFRESH_TOKEN,
     token_uri="https://oauth2.googleapis.com/token",
