@@ -1,47 +1,103 @@
-import random
+import json
+import re
+import math
+import subprocess
 
-HOOKS = [
-    "Here’s a car truth that ruins modern driving forever.",
-    "Modern cars didn’t get boring by accident.",
-    "This is why driving today feels impressive but empty.",
-    "The biggest lie about fast cars isn’t speed.",
-]
+# -------------------------------------------------
+# Load inputs
+# -------------------------------------------------
+text = open("script.txt", "r", encoding="utf-8").read().strip()
+words = re.findall(r"\b[\w’']+\b", text.upper())
 
-CORE = [
-    "In the 90s, a 300-horsepower car felt terrifying.",
-    "Today, normal family sedans quietly make the same power.",
-    "Yet most drivers feel less excitement than ever.",
-    "That’s because speed was never the thrill.",
-    "Old cars demanded attention, skill, and respect.",
-    "Steering fought back, brakes scared you, mistakes punished you.",
-    "Your brain stayed fully alert every second behind the wheel.",
-    "Modern cars remove that tension on purpose.",
-    "Electronics fix slides before you even sense them.",
-    "Automatic gearboxes decide when excitement is allowed.",
-    "Some sports cars fake engine sound through speakers.",
-    "You’re not driving faster — you’re being protected from feeling it.",
-]
+if not words:
+    raise Exception("❌ No words found")
 
-TWISTS = [
-    "That’s why slower cars used to feel alive.",
-    "That’s why fast cars today feel forgettable.",
-    "Comfort killed connection.",
-    "Safety killed involvement.",
-]
+with open("voice_meta.json", "r", encoding="utf-8") as f:
+    meta = json.load(f)
 
-LOOPS = [
-    "Once you notice this, driving never feels the same.",
-    "Now pay attention next time you drive.",
-]
+voice_duration = meta["duration"]
 
-script = " ".join(
-    random.sample(HOOKS, 1)
-    + random.sample(CORE, 9)
-    + random.sample(TWISTS, 2)
-    + random.sample(LOOPS, 1)
-)
+# -------------------------------------------------
+# Caption pacing (speech-locked)
+# -------------------------------------------------
+WORDS_PER_PHRASE = 2
+TOTAL_PHRASES = math.ceil(len(words) / WORDS_PER_PHRASE)
 
-with open("script.txt", "w", encoding="utf-8") as f:
-    f.write(script)
+# Exact pacing
+phrase_time = voice_duration / TOTAL_PHRASES
 
-print(script)
+# Human clamp
+phrase_time = max(0.55, min(0.85, phrase_time))
+
+# Anticipation (feels synced)
+ANTICIPATION = 0.05  # 50ms lead
+
+# -------------------------------------------------
+# ASS header (Shorts premium)
+# -------------------------------------------------
+ass = """[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+WrapStyle: 2
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Default,Poppins ExtraBold,124,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+
+def ts(t):
+    h = int(t // 3600)
+    m = int((t % 3600) // 60)
+    s = t % 60
+    return f"{h}:{m:02d}:{s:05.2f}"
+
+# -------------------------------------------------
+# Build captions
+# -------------------------------------------------
+events = []
+current_time = 0.0
+
+for i in range(0, len(words), WORDS_PER_PHRASE):
+    phrase = words[i:i + WORDS_PER_PHRASE]
+    hi = len(phrase) // 2
+
+    rendered = []
+    for idx, w in enumerate(phrase):
+        if idx == hi:
+            rendered.append(
+                r"{\c&H0000E6FF&\fscx92\fscy92\t(0,160,\fscx100\fscy100)}"
+                + w +
+                r"{\c&H00FFFFFF&}"
+            )
+        else:
+            rendered.append(w)
+
+    text = " ".join(rendered)
+
+    start = max(0, current_time - ANTICIPATION)
+    end = min(current_time + phrase_time, voice_duration)
+
+    events.append(
+        f"Dialogue: 0,{ts(start)},{ts(end)},Default,,0,0,0,,{text}"
+    )
+
+    current_time += phrase_time
+
+# Force last caption to end with voice
+if events:
+    last = events[-1].split(",")
+    last[2] = ts(voice_duration)
+    events[-1] = ",".join(last)
+
+# -------------------------------------------------
+# Write ASS
+# -------------------------------------------------
+with open("captions.ass", "w", encoding="utf-8") as f:
+    f.write(ass + "\n".join(events))
+
+print("✅ Captions perceptually synced to voice")
