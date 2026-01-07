@@ -1,52 +1,46 @@
-import subprocess
-import re
+import json
 import math
 
 # -------------------------------------------------
-# Load script
+# Load word-level timestamps
 # -------------------------------------------------
-text = open("script.txt", "r", encoding="utf-8").read().strip()
-words = re.findall(r"\b[\w’']+\b", text.upper())
+with open("words.json", "r", encoding="utf-8") as f:
+    words = json.load(f)
 
 if not words:
-    raise Exception("No words found")
+    raise Exception("❌ words.json is empty")
+
+# Convert ms → seconds
+def t(ms):
+    return ms / 1000.0
 
 # -------------------------------------------------
-# Get audio duration
+# Caption grouping rules (Shorts-optimized)
 # -------------------------------------------------
-probe = subprocess.run(
-    [
-        "ffprobe",
-        "-v", "error",
-        "-show_entries", "format=duration",
-        "-of", "default=noprint_wrappers=1:nokey=1",
-        "voice.mp3"
-    ],
-    capture_output=True,
-    text=True
-)
+WORDS_PER_PHRASE = 2      # 🔥 best sync + readability
+MAX_GAP = 0.45            # seconds, prevents rushing
 
-duration = float(probe.stdout.strip())
+phrases = []
+current = []
 
-# -------------------------------------------------
-# PERCEPTUAL TIMING (THIS IS THE KEY)
-# -------------------------------------------------
-WORDS_PER_PHRASE = 3
+for w in words:
+    if not current:
+        current.append(w)
+        continue
 
-# Human-readable timing (Shorts standard)
-MIN_CAPTION_TIME = 0.45
-MAX_CAPTION_TIME = 0.75
+    gap = t(w["offset"]) - t(current[-1]["offset"] + current[-1]["duration"])
 
-total_phrases = math.ceil(len(words) / WORDS_PER_PHRASE)
-avg_time = duration / total_phrases
+    if len(current) >= WORDS_PER_PHRASE or gap > MAX_GAP:
+        phrases.append(current)
+        current = [w]
+    else:
+        current.append(w)
 
-caption_time = max(
-    MIN_CAPTION_TIME,
-    min(MAX_CAPTION_TIME, avg_time)
-)
+if current:
+    phrases.append(current)
 
 # -------------------------------------------------
-# ASS header (CUSTOM FONT, PREMIUM LOOK)
+# ASS Header (PREMIUM SHORTS STYLE)
 # -------------------------------------------------
 ass = """[Script Info]
 ScriptType: v4.00+
@@ -58,73 +52,54 @@ ScaledBorderAndShadow: yes
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 
-; === PREMIUM SHORTS STYLE ===
-Style: Default,Poppins ExtraBold,110,&H00FFFFFF,&H0000E6FF,&H00000000,&H3C000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
+Style: Default,Poppins ExtraBold,120,&H00FFFFFF,&H0000E6FF,&H00000000,&H3A000000,1,0,0,0,100,100,4,0,1,7,4,3,60,60,320,1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
 
-def ts(t):
-    h = int(t // 3600)
-    m = int((t % 3600) // 60)
-    s = t % 60
+def ts(sec):
+    h = int(sec // 3600)
+    m = int((sec % 3600) // 60)
+    s = sec % 60
     return f"{h}:{m:02d}:{s:05.2f}"
 
 # -------------------------------------------------
-# Build captions (CALM, CLEAN, COOL)
+# Build captions (VOICE-LOCKED)
 # -------------------------------------------------
 events = []
-current_time = 0.0
-MAX_LINE_CHARS = 14
 
-for i in range(0, len(words), WORDS_PER_PHRASE):
-    phrase = words[i:i + WORDS_PER_PHRASE]
+for phrase in phrases:
+    start = t(phrase[0]["offset"])
+    end = t(phrase[-1]["offset"] + phrase[-1]["duration"])
 
-    hi = len(phrase) // 2
+    # Safety padding (prevents flash)
+    end += 0.08
 
-    # Line building
-    lines = []
-    line = ""
+    words_text = [w["word"].upper() for w in phrase]
+    hi = len(words_text) // 2
 
-    for w in phrase:
-        if len(line) + len(w) + 1 > MAX_LINE_CHARS:
-            lines.append(line.strip())
-            line = w + " "
+    rendered = []
+    for i, w in enumerate(words_text):
+        if i == hi:
+            rendered.append(
+                r"{\c&H0000E6FF&\fscx92\fscy92\t(0,160,\fscx100\fscy100)}"
+                + w +
+                r"{\c&H00FFFFFF&}"
+            )
         else:
-            line += w + " "
+            rendered.append(w)
 
-    if line.strip():
-        lines.append(line.strip())
-
-    lines = lines[:2]
-
-    # Highlight + soft pop
-    flat = 0
-    for li in range(len(lines)):
-        parts = lines[li].split()
-        for pi in range(len(parts)):
-            if flat == hi:
-                parts[pi] = (
-                    r"{\c&H0000E6FF&\fscx94\fscy94\t(0,160,\fscx100\fscy100)}"
-                    + parts[pi] +
-                    r"{\c&H00FFFFFF&}"
-                )
-            flat += 1
-        lines[li] = " ".join(parts)
-
-    rendered = r"\N".join(lines)
-
-    start = ts(current_time)
-    end = ts(current_time + caption_time)
+    text = " ".join(rendered)
 
     events.append(
-        f"Dialogue: 0,{start},{end},Default,,0,0,0,,{rendered}"
+        f"Dialogue: 0,{ts(start)},{ts(end)},Default,,0,0,0,,{text}"
     )
 
-    current_time += caption_time
-
+# -------------------------------------------------
+# Write ASS
+# -------------------------------------------------
 with open("captions.ass", "w", encoding="utf-8") as f:
     f.write(ass + "\n".join(events))
 
-print("🔥 PREMIUM YouTube Shorts captions generated")
+print("✅ Captions perfectly synced to voice (word-level)")
