@@ -14,14 +14,54 @@ else:
     used = set()
 
 # -------------------------------------------------
+# TONE ENGINE (ROTATES EVERY VIDEO)
+# -------------------------------------------------
+tones = {
+    "aggressive": {
+        "hook_prefix": [
+            "Nobody talks about this.",
+            "Here’s the truth people hate.",
+            "This is why modern cars failed."
+        ],
+        "ending": [
+            "Most drivers will never realize this.",
+            "And once you see it, there’s no going back."
+        ]
+    },
+    "calm": {
+        "hook_prefix": [
+            "There’s a quiet reason driving feels different today.",
+            "Something subtle changed in cars over time."
+        ],
+        "ending": [
+            "Once you notice this, driving feels different.",
+            "It quietly changes how you experience cars."
+        ]
+    },
+    "mysterious": {
+        "hook_prefix": [
+            "Something important disappeared from cars.",
+            "Modern cars are missing something crucial."
+        ],
+        "ending": [
+            "And now you know what it was.",
+            "You’ll start noticing this everywhere."
+        ]
+    }
+}
+
+tone_key = random.choice(list(tones.keys()))
+tone = tones[tone_key]
+
+# -------------------------------------------------
 # TOPIC ENGINE (IDEA-LEVEL UNIQUE + EMOTIONAL)
 # -------------------------------------------------
 topics = {
 
     "danger_equals_fun": {
         "hook": [
-            "Here’s something modern cars will never admit.",
-            "This is why old cars felt more exciting than today’s supercars."
+            "Old cars felt more exciting than modern supercars.",
+            "Driving used to feel intense for a reason."
         ],
         "shock": [
             "Danger didn’t scare your brain. It woke it up.",
@@ -29,32 +69,32 @@ topics = {
         ],
         "points": [
             "Number one. Old cars punished mistakes instantly.",
-            "Number two. That fear sharpened your senses.",
-            "Number three. Modern cars remove fear, and excitement dies."
+            "Number two. Fear sharpened your focus and reactions.",
+            "Number three. Modern cars remove fear, and excitement fades."
         ],
         "payoff": [
             "That’s why slower cars used to feel faster.",
-            "The thrill wasn’t lost. It was removed on purpose."
+            "The thrill wasn’t lost. It was engineered out."
         ]
     },
 
     "manuals_create_emotion": {
         "hook": [
-            "Manual cars aren’t faster. But they feel more alive.",
+            "Manual cars aren’t faster, but they feel alive.",
             "There’s a reason manuals still have cult followings."
         ],
         "shock": [
-            "Fun doesn’t come from speed. It comes from responsibility.",
-            "Your brain loves being in charge."
+            "Fun doesn’t come from speed. It comes from control.",
+            "Your brain loves being responsible."
         ],
         "points": [
             "Number one. Manuals force constant decision-making.",
             "Number two. Every shift has consequences.",
-            "Number three. Consequences create emotional attachment."
+            "Number three. Consequences create emotional connection."
         ],
         "payoff": [
             "That’s why manuals feel unforgettable.",
-            "Automation kills involvement."
+            "Automation removes involvement."
         ]
     },
 
@@ -65,12 +105,12 @@ topics = {
         ],
         "shock": [
             "Car companies removed feedback on purpose.",
-            "Comfort was chosen over communication."
+            "Comfort replaced communication."
         ],
         "points": [
             "Number one. Hydraulic steering transmitted real forces.",
             "Number two. Electric steering filters sensations.",
-            "Number three. Filtering removes trust and connection."
+            "Number three. Filtering removes trust and confidence."
         ],
         "payoff": [
             "That’s why old cars talked to you.",
@@ -80,12 +120,12 @@ topics = {
 
     "sound_controls_speed": {
         "hook": [
-            "Sound matters more than speed. Here’s proof.",
+            "Sound matters more than speed.",
             "A loud slow car can feel faster than a silent fast one."
         ],
         "shock": [
             "Your brain measures speed using sound.",
-            "Silence tricks your perception."
+            "Silence tricks perception."
         ],
         "points": [
             "Number one. Engine noise signals acceleration.",
@@ -93,15 +133,15 @@ topics = {
             "Number three. That’s why EVs feel fast but empty."
         ],
         "payoff": [
-            "Speed is math. Sound is emotion.",
+            "Speed is numbers. Sound is emotion.",
             "Emotion is what you remember."
         ]
     },
 
     "supercars_are_too_good": {
         "hook": [
-            "Supercars are incredible. And that’s the problem.",
-            "Here’s why supercars don’t feel as fun as you expect."
+            "Supercars are incredible. That’s the problem.",
+            "Modern supercars don’t excite like you expect."
         ],
         "shock": [
             "Perfection removes struggle.",
@@ -109,7 +149,7 @@ topics = {
         ],
         "points": [
             "Number one. Electronics stop mistakes instantly.",
-            "Number two. You never explore the limit.",
+            "Number two. You never explore the limits.",
             "Number three. No limits means no adrenaline."
         ],
         "payoff": [
@@ -160,8 +200,8 @@ topics = {
 
     "ev_emotion_gap": {
         "hook": [
-            "Electric cars feel fast. But not exciting.",
-            "EVs hide a serious emotional problem."
+            "Electric cars feel fast, but not thrilling.",
+            "EVs hide an emotional problem."
         ],
         "shock": [
             "Instant torque isn’t enough.",
@@ -173,7 +213,7 @@ topics = {
             "Number three. Speed loses drama."
         ],
         "payoff": [
-            "That’s why EVs feel impressive, not thrilling.",
+            "That’s why EVs feel impressive, not exciting.",
             "Emotion needs friction."
         ]
     }
@@ -197,16 +237,17 @@ with open(USED_FILE, "w", encoding="utf-8") as f:
 topic = topics[topic_key]
 
 # -------------------------------------------------
-# BUILD VIRAL SCRIPT (FIXED STRUCTURE)
+# BUILD VIRAL SCRIPT (TONE + SHOCK + NUMBERS)
 # -------------------------------------------------
 script = " ".join([
+    random.choice(tone["hook_prefix"]),
     random.choice(topic["hook"]),
     random.choice(topic["shock"]),
     topic["points"][0],
     topic["points"][1],
     topic["points"][2],
     random.choice(topic["payoff"]),
-    "Once you notice this, you can’t unfeel it."
+    random.choice(tone["ending"])
 ])
 
 # -------------------------------------------------
@@ -215,5 +256,5 @@ script = " ".join([
 with open("script.txt", "w", encoding="utf-8") as f:
     f.write(script)
 
-print(f"✅ VIRAL script generated | topic = {topic_key}")
+print(f"✅ VIRAL script generated | topic = {topic_key} | tone = {tone_key}")
 print(script)
