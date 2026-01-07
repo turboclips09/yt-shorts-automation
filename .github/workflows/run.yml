@@ -31,3 +31,6 @@ jobs:
         with:
           name: youtube-short
           path: final.zip
+                - run: python metadata.py
+      - run: python upload_youtube.py
+
