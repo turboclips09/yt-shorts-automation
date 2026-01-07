@@ -63,7 +63,7 @@ upload = youtube.videos().insert(
             "categoryId": "24"  # Entertainment
         },
         "status": {
-            "privacyStatus": "private",
+            "privacyStatus": "unlisted",
             "publishAt": publish_at,
             "selfDeclaredMadeForKids": False
         }
