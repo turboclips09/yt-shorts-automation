@@ -8,6 +8,7 @@ import os
 # Paths
 # -------------------------------------------------
 BG_MUSIC = "assets/bg_music.mp3"
+CAPTIONS = "captions.ass"
 
 # -------------------------------------------------
 # Collect video sources
@@ -26,6 +27,9 @@ if len(pixabay_videos) < 5:
 
 if not os.path.exists(BG_MUSIC):
     raise Exception("❌ Background music not found at assets/bg_music.mp3")
+
+if not os.path.exists(CAPTIONS):
+    raise Exception("❌ captions.ass not found")
 
 print(f"Using background music: {BG_MUSIC}")
 
@@ -79,11 +83,11 @@ cmd += [
 ]
 
 # -------------------------------------------------
-# Filter graph
+# Build filter graph
 # -------------------------------------------------
 filters = []
 
-# Video filters
+# Video scaling & cropping
 for i in range(len(selected)):
     filters.append(
         f"[{i}:v]"
@@ -102,7 +106,8 @@ filter_complex = (
     + ";"
     + f"{video_chain}concat=n={len(selected)}:v=1:a=0[base]"
     + ";"
-    + "[base]ass=captions.ass:fontsdir=assets/fonts:/usr/share/fonts[outv]"
+    # 🔥 FIXED LINE — QUOTED FONTSDIR
+    + "[base]ass=captions.ass:fontsdir='assets/fonts:/usr/share/fonts'[outv]"
     + ";"
     + f"[{voice_index}:a]volume=1.0[a_voice]"
     + ";"
@@ -123,6 +128,6 @@ cmd += [
     "final.mp4"
 ]
 
-print("▶️ Running FFmpeg with background music…")
+print("▶️ Running FFmpeg with custom font + music…")
 sp.run(cmd, check=True)
-print("✅ Final video created with background music")
+print("✅ Final video created successfully")
