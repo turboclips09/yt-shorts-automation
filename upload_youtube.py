@@ -6,16 +6,10 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
-# -------------------------------------------------
-# ENV
-# -------------------------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
-# -------------------------------------------------
-# AUTH
-# -------------------------------------------------
 creds = Credentials(
     None,
     refresh_token=REFRESH_TOKEN,
@@ -28,27 +22,17 @@ creds = Credentials(
     ]
 )
 
-print("Scopes:", creds.scopes)
-
 youtube = build("youtube", "v3", credentials=creds)
 
-# -------------------------------------------------
-# LOAD METADATA
-# -------------------------------------------------
 with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
-# -------------------------------------------------
-# RANDOM SCHEDULE TIME (UTC, FUTURE)
-# -------------------------------------------------
 publish_at = (
     datetime.datetime.utcnow()
     + datetime.timedelta(hours=random.randint(1, 18))
 ).replace(microsecond=0).isoformat() + "Z"
 
-# -------------------------------------------------
-# STEP 1 — UPLOAD AS UNLISTED (NO publishAt)
-# -------------------------------------------------
+# Upload as UNLISTED
 upload = youtube.videos().insert(
     part="snippet,status",
     body={
@@ -68,14 +52,11 @@ upload = youtube.videos().insert(
 
 video = upload.execute()
 video_id = video["id"]
-
 print("✅ Uploaded (unlisted):", video_id)
 
-# -------------------------------------------------
-# COMMENT + PIN
-# -------------------------------------------------
+# Post comment (no pin)
 try:
-    comment = youtube.commentThreads().insert(
+    youtube.commentThreads().insert(
         part="snippet",
         body={
             "snippet": {
@@ -92,25 +73,13 @@ try:
         }
     ).execute()
 
-    thread_id = comment["id"]
-
-    youtube.commentThreads().update(
-        part="snippet",
-        body={
-            "id": thread_id,
-            "snippet": {"isPinned": True}
-        }
-    ).execute()
-
-    print("📌 Comment posted and pinned")
+    print("💬 Comment posted")
 
 except Exception as e:
-    print("⚠️ Comment failed (continuing)")
+    print("⚠️ Comment failed (non-critical)")
     print(e)
 
-# -------------------------------------------------
-# STEP 2 — SCHEDULE THE VIDEO (PRIVATE + publishAt)
-# -------------------------------------------------
+# Schedule video
 youtube.videos().update(
     part="status",
     body={
