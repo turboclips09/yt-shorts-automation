@@ -2,259 +2,199 @@ import random
 import json
 import os
 
-USED_FILE = "used_topics.json"
+USED_TOPICS_FILE = "used_topics.json"
+STYLE_STATE_FILE = "style_state.json"
 
 # -------------------------------------------------
-# LOAD MEMORY (PREVENT REPEATS)
+# LOAD MEMORY
 # -------------------------------------------------
-if os.path.exists(USED_FILE):
-    with open(USED_FILE, "r", encoding="utf-8") as f:
-        used = set(json.load(f))
-else:
-    used = set()
+used_topics = set()
+if os.path.exists(USED_TOPICS_FILE):
+    used_topics = set(json.load(open(USED_TOPICS_FILE, "r", encoding="utf-8")))
+
+style_state = {"index": 0}
+if os.path.exists(STYLE_STATE_FILE):
+    style_state = json.load(open(STYLE_STATE_FILE, "r", encoding="utf-8"))
+
+STYLES = ["story", "insight", "myth"]
+
+current_style = STYLES[style_state["index"] % len(STYLES)]
+style_state["index"] += 1
 
 # -------------------------------------------------
-# TONE ENGINE (ROTATES EVERY VIDEO)
+# TOPIC BRAIN (HIGH-QUALITY ONLY)
 # -------------------------------------------------
-tones = {
-    "aggressive": {
-        "hook_prefix": [
-            "Nobody talks about this.",
-            "Here’s the truth people hate.",
-            "This is why modern cars failed."
-        ],
-        "ending": [
-            "Most drivers will never realize this.",
-            "And once you see it, there’s no going back."
-        ]
-    },
-    "calm": {
-        "hook_prefix": [
-            "There’s a quiet reason driving feels different today.",
-            "Something subtle changed in cars over time."
-        ],
-        "ending": [
-            "Once you notice this, driving feels different.",
-            "It quietly changes how you experience cars."
-        ]
-    },
-    "mysterious": {
-        "hook_prefix": [
-            "Something important disappeared from cars.",
-            "Modern cars are missing something crucial."
-        ],
-        "ending": [
-            "And now you know what it was.",
-            "You’ll start noticing this everywhere."
-        ]
-    }
-}
+TOPICS = {
 
-tone_key = random.choice(list(tones.keys()))
-tone = tones[tone_key]
-
-# -------------------------------------------------
-# TOPIC ENGINE (IDEA-LEVEL UNIQUE + EMOTIONAL)
-# -------------------------------------------------
-topics = {
-
-    "danger_equals_fun": {
-        "hook": [
-            "Old cars felt more exciting than modern supercars.",
-            "Driving used to feel intense for a reason."
-        ],
-        "shock": [
-            "Danger didn’t scare your brain. It woke it up.",
-            "Your brain actually enjoys controlled risk."
-        ],
-        "points": [
-            "Number one. Old cars punished mistakes instantly.",
-            "Number two. Fear sharpened your focus and reactions.",
-            "Number three. Modern cars remove fear, and excitement fades."
-        ],
-        "payoff": [
-            "That’s why slower cars used to feel faster.",
-            "The thrill wasn’t lost. It was engineered out."
+    # ================= STORY =================
+    "porsche_saved_911": {
+        "style": "story",
+        "lines": [
+            "In the 1990s, Porsche almost killed the 911.",
+            "Executives believed it was outdated and too dangerous.",
+            "Engineers were told to make it safer and easier.",
+            "But hardcore fans panicked.",
+            "The 911 wasn’t supposed to be safe.",
+            "It was supposed to be demanding.",
+            "Porsche made a risky decision.",
+            "They kept the difficulty.",
+            "And the 911 became a legend."
         ]
     },
 
-    "manuals_create_emotion": {
-        "hook": [
-            "Manual cars aren’t faster, but they feel alive.",
-            "There’s a reason manuals still have cult followings."
-        ],
-        "shock": [
-            "Fun doesn’t come from speed. It comes from control.",
-            "Your brain loves being responsible."
-        ],
-        "points": [
-            "Number one. Manuals force constant decision-making.",
-            "Number two. Every shift has consequences.",
-            "Number three. Consequences create emotional connection."
-        ],
-        "payoff": [
-            "That’s why manuals feel unforgettable.",
-            "Automation removes involvement."
+    "first_manual_memory": {
+        "style": "story",
+        "lines": [
+            "Most people remember their first manual car forever.",
+            "Not because it was fast.",
+            "But because it made them feel responsible.",
+            "Stalling felt embarrassing.",
+            "A perfect shift felt incredible.",
+            "The car reacted to your decisions.",
+            "That relationship created emotion.",
+            "Automation removes effort.",
+            "And effort creates attachment."
         ]
     },
 
-    "steering_was_neutered": {
-        "hook": [
-            "Modern steering feels numb for a reason.",
-            "Steering feel didn’t disappear by accident."
-        ],
-        "shock": [
-            "Car companies removed feedback on purpose.",
-            "Comfort replaced communication."
-        ],
-        "points": [
-            "Number one. Hydraulic steering transmitted real forces.",
-            "Number two. Electric steering filters sensations.",
-            "Number three. Filtering removes trust and confidence."
-        ],
-        "payoff": [
-            "That’s why old cars talked to you.",
-            "Silence feels safe, not exciting."
+    "ferrari_driver_problem": {
+        "style": "story",
+        "lines": [
+            "Ferrari once faced a strange problem.",
+            "Their cars were becoming too fast for drivers.",
+            "Reflexes couldn’t keep up anymore.",
+            "So computers were added to help.",
+            "Lap times improved instantly.",
+            "But drivers felt disconnected.",
+            "Ferrari learned something important.",
+            "Speed alone isn’t excitement.",
+            "Involvement is."
+        ]
+    },
+
+    # ================= INSIGHT =================
+    "why_old_cars_feel_alive": {
+        "style": "insight",
+        "lines": [
+            "Old cars didn’t feel exciting because they were faster.",
+            "They felt exciting because they talked to you.",
+            "The steering pulled in your hands.",
+            "The pedals vibrated.",
+            "The engine sound rose naturally.",
+            "Your brain stitched these signals together.",
+            "Modern cars filter them out.",
+            "Speed remains.",
+            "Feeling disappears."
         ]
     },
 
     "sound_controls_speed": {
-        "hook": [
-            "Sound matters more than speed.",
-            "A loud slow car can feel faster than a silent fast one."
-        ],
-        "shock": [
-            "Your brain measures speed using sound.",
-            "Silence tricks perception."
-        ],
-        "points": [
-            "Number one. Engine noise signals acceleration.",
-            "Number two. Quiet removes urgency.",
-            "Number three. That’s why EVs feel fast but empty."
-        ],
-        "payoff": [
-            "Speed is numbers. Sound is emotion.",
-            "Emotion is what you remember."
-        ]
-    },
-
-    "supercars_are_too_good": {
-        "hook": [
-            "Supercars are incredible. That’s the problem.",
-            "Modern supercars don’t excite like you expect."
-        ],
-        "shock": [
-            "Perfection removes struggle.",
-            "And struggle creates excitement."
-        ],
-        "points": [
-            "Number one. Electronics stop mistakes instantly.",
-            "Number two. You never explore the limits.",
-            "Number three. No limits means no adrenaline."
-        ],
-        "payoff": [
-            "That’s why normal cars can feel more fun.",
-            "Perfection impresses. Imperfection excites."
+        "style": "insight",
+        "lines": [
+            "Your brain doesn’t measure speed with numbers.",
+            "It measures it with sound.",
+            "Loud engines signal danger and urgency.",
+            "Silence signals control.",
+            "That’s why loud slow cars feel fast.",
+            "And quiet fast cars feel calm.",
+            "Speed is physics.",
+            "Sound is emotion."
         ]
     },
 
     "weight_kills_fun": {
-        "hook": [
-            "Cars didn’t get boring. They got heavy.",
-            "Weight is the silent fun killer."
-        ],
-        "shock": [
+        "style": "insight",
+        "lines": [
+            "Cars didn’t get boring.",
+            "They got heavy.",
             "Your brain feels mass before speed.",
-            "Heaviness dulls excitement."
-        ],
-        "points": [
-            "Number one. Heavy cars react slower.",
-            "Number two. Feedback disappears.",
-            "Number three. Lightness creates joy."
-        ],
-        "payoff": [
-            "That’s why lightweight cars feel alive.",
-            "Physics never lies."
+            "Heavy cars react slower.",
+            "Feedback dulls.",
+            "Confidence drops.",
+            "Light cars communicate instantly.",
+            "Physics doesn’t lie."
         ]
     },
 
-    "tech_made_drivers_worse": {
-        "hook": [
-            "Drivers didn’t get worse by accident.",
-            "Modern cars quietly trained bad drivers."
-        ],
-        "shock": [
-            "Technology removed consequences.",
-            "And consequences create skill."
-        ],
-        "points": [
-            "Number one. Cars fix mistakes instantly.",
-            "Number two. Drivers stop learning limits.",
-            "Number three. Skill fades without feedback."
-        ],
-        "payoff": [
-            "That’s why old drivers felt sharper.",
-            "Comfort changes behavior."
+    # ================= MYTH =================
+    "horsepower_myth": {
+        "style": "myth",
+        "lines": [
+            "More horsepower does not mean more fun.",
+            "That sounds wrong.",
+            "But here’s the truth.",
+            "Power is only exciting near its limit.",
+            "Most modern cars never reach it.",
+            "Electronics intervene first.",
+            "You feel safe.",
+            "But not thrilled."
         ]
     },
 
-    "ev_emotion_gap": {
-        "hook": [
-            "Electric cars feel fast, but not thrilling.",
-            "EVs hide an emotional problem."
-        ],
-        "shock": [
-            "Instant torque isn’t enough.",
-            "Emotion needs build-up."
-        ],
-        "points": [
-            "Number one. EVs add massive weight.",
-            "Number two. Sound disappears.",
-            "Number three. Speed loses drama."
-        ],
-        "payoff": [
-            "That’s why EVs feel impressive, not exciting.",
-            "Emotion needs friction."
+    "supercars_are_boring": {
+        "style": "myth",
+        "lines": [
+            "People think supercars are the most exciting cars.",
+            "In reality, they can feel intimidating.",
+            "They are too capable.",
+            "Mistakes are corrected instantly.",
+            "Limits are unreachable on public roads.",
+            "Normal cars allow exploration.",
+            "Exploration creates adrenaline."
+        ]
+    },
+
+    "ev_fun_problem": {
+        "style": "myth",
+        "lines": [
+            "Electric cars feel fast.",
+            "But many people say they feel empty.",
+            "Instant torque removes buildup.",
+            "Sound disappears.",
+            "Weight increases.",
+            "Drama is lost.",
+            "Speed remains.",
+            "Emotion fades."
         ]
     }
 }
 
 # -------------------------------------------------
-# PICK UNUSED TOPIC
+# PICK UNUSED TOPIC MATCHING STYLE
 # -------------------------------------------------
-available = [k for k in topics if k not in used]
+available = [
+    k for k, v in TOPICS.items()
+    if v["style"] == current_style and k not in used_topics
+]
 
 if not available:
-    used.clear()
-    available = list(topics.keys())
+    used_topics.clear()
+    available = [k for k, v in TOPICS.items() if v["style"] == current_style]
 
 topic_key = random.choice(available)
-used.add(topic_key)
-
-with open(USED_FILE, "w", encoding="utf-8") as f:
-    json.dump(list(used), f, indent=2)
-
-topic = topics[topic_key]
+used_topics.add(topic_key)
 
 # -------------------------------------------------
-# BUILD VIRAL SCRIPT (TONE + SHOCK + NUMBERS)
+# SAVE MEMORY
 # -------------------------------------------------
-script = " ".join([
-    random.choice(tone["hook_prefix"]),
-    random.choice(topic["hook"]),
-    random.choice(topic["shock"]),
-    topic["points"][0],
-    topic["points"][1],
-    topic["points"][2],
-    random.choice(topic["payoff"]),
-    random.choice(tone["ending"])
+json.dump(list(used_topics), open(USED_TOPICS_FILE, "w", encoding="utf-8"), indent=2)
+json.dump(style_state, open(STYLE_STATE_FILE, "w", encoding="utf-8"), indent=2)
+
+# -------------------------------------------------
+# BUILD FINAL SCRIPT
+# -------------------------------------------------
+lines = TOPICS[topic_key]["lines"]
+
+ending = random.choice([
+    "Once you notice this, driving feels different forever.",
+    "That’s why some cars stay in your memory forever.",
+    "And now you understand why driving used to feel alive."
 ])
 
-# -------------------------------------------------
-# WRITE OUTPUT
-# -------------------------------------------------
+script = " ".join(lines) + " " + ending
+
 with open("script.txt", "w", encoding="utf-8") as f:
     f.write(script)
 
-print(f"✅ VIRAL script generated | topic = {topic_key} | tone = {tone_key}")
+print(f"🔥 Script generated | style={current_style} | topic={topic_key}")
 print(script)
