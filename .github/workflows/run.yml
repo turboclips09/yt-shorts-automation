@@ -89,6 +89,7 @@ jobs:
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python upload_youtube.py
+        run: python track_performance.py
 
       # -------------------------------
       # Save output as artifact (optional)
