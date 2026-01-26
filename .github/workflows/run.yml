@@ -3,9 +3,10 @@ name: yt-shorts-automation
 on:
   workflow_dispatch:
   schedule:
-    # Two runs per day (videos publish at random times internally)
-    - cron: "0 2 * * *"
-    - cron: "0 14 * * *"
+    # Three chances per day
+    - cron: "0 1 * * *"
+    - cron: "0 9 * * *"
+    - cron: "0 17 * * *"
 
 jobs:
   build-and-upload:
@@ -13,13 +14,13 @@ jobs:
 
     steps:
       # -------------------------------
-      # Checkout repository
+      # Checkout
       # -------------------------------
       - name: Checkout repo
         uses: actions/checkout@v4
 
       # -------------------------------
-      # Setup Python
+      # Python
       # -------------------------------
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -27,7 +28,7 @@ jobs:
           python-version: "3.11"
 
       # -------------------------------
-      # Install system dependencies
+      # FFmpeg
       # -------------------------------
       - name: Install FFmpeg
         run: |
@@ -35,7 +36,7 @@ jobs:
           sudo apt install -y ffmpeg
 
       # -------------------------------
-      # Install Python dependencies
+      # Python packages
       # -------------------------------
       - name: Install Python packages
         run: |
@@ -43,25 +44,38 @@ jobs:
           google-auth google-auth-oauthlib google-api-python-client
 
       # -------------------------------
-      # Generate script
+      # 50% RANDOM SKIP (controls 2–3/day)
+      # -------------------------------
+      - name: Random gate
+        run: |
+          python - <<EOF
+          import random, sys
+          if random.random() < 0.5:
+              print("Skipping this run")
+              sys.exit(0)
+          print("Proceeding with upload")
+          EOF
+
+      # -------------------------------
+      # Script
       # -------------------------------
       - name: Generate script
         run: python script.py
 
       # -------------------------------
-      # Generate voice + timings
+      # Voice
       # -------------------------------
       - name: Generate voice
         run: python voice.py
 
       # -------------------------------
-      # Generate captions
+      # Captions
       # -------------------------------
       - name: Generate captions
         run: python captions.py
 
       # -------------------------------
-      # Download stock videos
+      # Pixabay
       # -------------------------------
       - name: Download Pixabay videos
         env:
@@ -69,19 +83,19 @@ jobs:
         run: python download_stock.py
 
       # -------------------------------
-      # Build final video
+      # Build video
       # -------------------------------
       - name: Build video
         run: python build_video_ffmpeg.py
 
       # -------------------------------
-      # Generate title / description / tags
+      # Metadata
       # -------------------------------
       - name: Generate metadata
         run: python metadata.py
 
       # -------------------------------
-      # Upload to YouTube
+      # Upload
       # -------------------------------
       - name: Upload to YouTube
         env:
@@ -89,10 +103,21 @@ jobs:
           YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python upload_youtube.py
+
+      # -------------------------------
+      # Track performance
+      # -------------------------------
+      - name: Track performance
         run: python track_performance.py
 
       # -------------------------------
-      # Save output as artifact (optional)
+      # Learning engine
+      # -------------------------------
+      - name: Update brain
+        run: python learn.py
+
+      # -------------------------------
+      # Artifact
       # -------------------------------
       - name: Upload video artifact
         uses: actions/upload-artifact@v4
