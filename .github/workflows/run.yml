@@ -13,90 +13,91 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # -------------------------------
+
+      # -----------------------------
       # Checkout
-      # -------------------------------
+      # -----------------------------
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # -------------------------------
-      # Python
-      # -------------------------------
+      # -----------------------------
+      # Setup Python
+      # -----------------------------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      # -------------------------------
-      # FFmpeg
-      # -------------------------------
+      # -----------------------------
+      # Install FFmpeg
+      # -----------------------------
       - name: Install FFmpeg
         run: |
           sudo apt update
           sudo apt install -y ffmpeg
 
-      # -------------------------------
-      # Python packages
-      # -------------------------------
+      # -----------------------------
+      # Install Python packages
+      # -----------------------------
       - name: Install Python packages
         run: |
           pip install edge-tts requests \
           google-auth google-auth-oauthlib google-api-python-client
 
-      # -------------------------------
-      # 50% RANDOM SKIP (controls 2–3/day)
-      # -------------------------------
+      # -----------------------------
+      # Random Gate (50% skip)
+      # -----------------------------
       - name: Random gate
         run: |
           python - <<EOF
           import random, sys
           if random.random() < 0.5:
-              print("Skipping this run")
+              print("⏭ Skipping this run")
               sys.exit(0)
-          print("Proceeding with upload")
+          print("▶ Proceeding with upload")
           EOF
 
-      # -------------------------------
-      # Script
-      # -------------------------------
+      # -----------------------------
+      # Generate Script
+      # -----------------------------
       - name: Generate script
         run: python script.py
 
-      # -------------------------------
-      # Voice
-      # -------------------------------
+      # -----------------------------
+      # Generate Voice
+      # -----------------------------
       - name: Generate voice
         run: python voice.py
 
-      # -------------------------------
-      # Captions
-      # -------------------------------
+      # -----------------------------
+      # Generate Captions
+      # -----------------------------
       - name: Generate captions
         run: python captions.py
 
-      # -------------------------------
-      # Pixabay
-      # -------------------------------
+      # -----------------------------
+      # Download Pixabay Videos
+      # -----------------------------
       - name: Download Pixabay videos
         env:
           PIXABAY_API_KEY: ${{ secrets.PIXABAY_API_KEY }}
         run: python download_stock.py
 
-      # -------------------------------
-      # Build video
-      # -------------------------------
+      # -----------------------------
+      # Build Video
+      # -----------------------------
       - name: Build video
         run: python build_video_ffmpeg.py
 
-      # -------------------------------
-      # Metadata
-      # -------------------------------
+      # -----------------------------
+      # Generate Metadata
+      # -----------------------------
       - name: Generate metadata
         run: python metadata.py
 
-      # -------------------------------
-      # Upload
-      # -------------------------------
+      # -----------------------------
+      # Upload To YouTube
+      # -----------------------------
       - name: Upload to YouTube
         env:
           YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
@@ -104,21 +105,25 @@ jobs:
           YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python upload_youtube.py
 
-      # -------------------------------
-      # Track performance
-      # -------------------------------
+      # -----------------------------
+      # Track Performance
+      # -----------------------------
       - name: Track performance
+        env:
+          YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
+          YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
+          YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         run: python track_performance.py
 
-      # -------------------------------
-      # Learning engine
-      # -------------------------------
+      # -----------------------------
+      # Update Brain (Learning)
+      # -----------------------------
       - name: Update brain
         run: python learn.py
 
-      # -------------------------------
-      # Artifact
-      # -------------------------------
+      # -----------------------------
+      # Save Artifact (optional)
+      # -----------------------------
       - name: Upload video artifact
         uses: actions/upload-artifact@v4
         with:
