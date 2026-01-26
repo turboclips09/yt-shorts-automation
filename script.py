@@ -2,199 +2,210 @@ import random
 import json
 import os
 
-USED_TOPICS_FILE = "used_topics.json"
-STYLE_STATE_FILE = "style_state.json"
+# --------------------------------
+# FILES
+# --------------------------------
+BRAIN_FILE = "brain.json"
+USED_FILE = "used_topics.json"
 
-# -------------------------------------------------
-# LOAD MEMORY
-# -------------------------------------------------
-used_topics = set()
-if os.path.exists(USED_TOPICS_FILE):
-    used_topics = set(json.load(open(USED_TOPICS_FILE, "r", encoding="utf-8")))
+brain = json.load(open(BRAIN_FILE))
 
-style_state = {"index": 0}
-if os.path.exists(STYLE_STATE_FILE):
-    style_state = json.load(open(STYLE_STATE_FILE, "r", encoding="utf-8"))
+if os.path.exists(USED_FILE):
+    used = set(json.load(open(USED_FILE)))
+else:
+    used = set()
 
-STYLES = ["story", "insight", "myth"]
-
-current_style = STYLES[style_state["index"] % len(STYLES)]
-style_state["index"] += 1
-
-# -------------------------------------------------
-# TOPIC BRAIN (HIGH-QUALITY ONLY)
-# -------------------------------------------------
-TOPICS = {
-
-    # ================= STORY =================
-    "porsche_saved_911": {
-        "style": "story",
-        "lines": [
-            "In the 1990s, Porsche almost killed the 911.",
-            "Executives believed it was outdated and too dangerous.",
-            "Engineers were told to make it safer and easier.",
-            "But hardcore fans panicked.",
-            "The 911 wasn’t supposed to be safe.",
-            "It was supposed to be demanding.",
-            "Porsche made a risky decision.",
-            "They kept the difficulty.",
-            "And the 911 became a legend."
-        ]
-    },
-
-    "first_manual_memory": {
-        "style": "story",
-        "lines": [
-            "Most people remember their first manual car forever.",
-            "Not because it was fast.",
-            "But because it made them feel responsible.",
-            "Stalling felt embarrassing.",
-            "A perfect shift felt incredible.",
-            "The car reacted to your decisions.",
-            "That relationship created emotion.",
-            "Automation removes effort.",
-            "And effort creates attachment."
-        ]
-    },
-
-    "ferrari_driver_problem": {
-        "style": "story",
-        "lines": [
-            "Ferrari once faced a strange problem.",
-            "Their cars were becoming too fast for drivers.",
-            "Reflexes couldn’t keep up anymore.",
-            "So computers were added to help.",
-            "Lap times improved instantly.",
-            "But drivers felt disconnected.",
-            "Ferrari learned something important.",
-            "Speed alone isn’t excitement.",
-            "Involvement is."
-        ]
-    },
-
-    # ================= INSIGHT =================
-    "why_old_cars_feel_alive": {
-        "style": "insight",
-        "lines": [
-            "Old cars didn’t feel exciting because they were faster.",
-            "They felt exciting because they talked to you.",
-            "The steering pulled in your hands.",
-            "The pedals vibrated.",
-            "The engine sound rose naturally.",
-            "Your brain stitched these signals together.",
-            "Modern cars filter them out.",
-            "Speed remains.",
-            "Feeling disappears."
-        ]
-    },
-
-    "sound_controls_speed": {
-        "style": "insight",
-        "lines": [
-            "Your brain doesn’t measure speed with numbers.",
-            "It measures it with sound.",
-            "Loud engines signal danger and urgency.",
-            "Silence signals control.",
-            "That’s why loud slow cars feel fast.",
-            "And quiet fast cars feel calm.",
-            "Speed is physics.",
-            "Sound is emotion."
-        ]
-    },
-
-    "weight_kills_fun": {
-        "style": "insight",
-        "lines": [
-            "Cars didn’t get boring.",
-            "They got heavy.",
-            "Your brain feels mass before speed.",
-            "Heavy cars react slower.",
-            "Feedback dulls.",
-            "Confidence drops.",
-            "Light cars communicate instantly.",
-            "Physics doesn’t lie."
-        ]
-    },
-
-    # ================= MYTH =================
-    "horsepower_myth": {
-        "style": "myth",
-        "lines": [
-            "More horsepower does not mean more fun.",
-            "That sounds wrong.",
-            "But here’s the truth.",
-            "Power is only exciting near its limit.",
-            "Most modern cars never reach it.",
-            "Electronics intervene first.",
-            "You feel safe.",
-            "But not thrilled."
-        ]
-    },
-
-    "supercars_are_boring": {
-        "style": "myth",
-        "lines": [
-            "People think supercars are the most exciting cars.",
-            "In reality, they can feel intimidating.",
-            "They are too capable.",
-            "Mistakes are corrected instantly.",
-            "Limits are unreachable on public roads.",
-            "Normal cars allow exploration.",
-            "Exploration creates adrenaline."
-        ]
-    },
-
-    "ev_fun_problem": {
-        "style": "myth",
-        "lines": [
-            "Electric cars feel fast.",
-            "But many people say they feel empty.",
-            "Instant torque removes buildup.",
-            "Sound disappears.",
-            "Weight increases.",
-            "Drama is lost.",
-            "Speed remains.",
-            "Emotion fades."
-        ]
-    }
+# --------------------------------
+# SCRIPT STYLES
+# --------------------------------
+STYLES = {
+    "aggressive": "Fast. Bold. Punchy.",
+    "mysterious": "Slow. Curious. Hidden truth.",
+    "story": "Mini story with twist.",
+    "educational": "Facts + explanations.",
+    "controversial": "Challenges belief."
 }
 
-# -------------------------------------------------
-# PICK UNUSED TOPIC MATCHING STYLE
-# -------------------------------------------------
-available = [
-    k for k, v in TOPICS.items()
-    if v["style"] == current_style and k not in used_topics
+# --------------------------------
+# MASSIVE TOPIC POOL (EXPANDED)
+# --------------------------------
+TOPICS = {
+
+"old_vs_new": [
+"Old cars felt alive.",
+"Modern cars feel perfect.",
+"Perfect removes struggle.",
+"Struggle creates emotion.",
+"That’s what disappeared."
+],
+
+"manual_magic": [
+"Manual cars force thinking.",
+"Thinking creates involvement.",
+"Involvement creates emotion.",
+"Emotion creates addiction.",
+"That’s why manuals survive."
+],
+
+"danger_equals_fun": [
+"Your brain likes danger.",
+"Not chaos. Controlled danger.",
+"Old cars had consequences.",
+"Consequences create focus.",
+"Focus creates thrill."
+],
+
+"sound_psychology": [
+"Your brain measures speed using sound.",
+"Loud equals fast.",
+"Quiet equals slow.",
+"That’s why EVs feel empty.",
+"Speed needs drama."
+],
+
+"weight_problem": [
+"Cars got heavier.",
+"Heavier means slower reactions.",
+"Slower reactions feel boring.",
+"Light cars feel playful.",
+"Physics never lies."
+],
+
+"supercars_problem": [
+"Supercars are too good.",
+"They hide their limits.",
+"No limits means no adrenaline.",
+"No adrenaline means no memory.",
+"That’s the paradox."
+],
+
+"steering_numb": [
+"Modern steering is filtered.",
+"Old steering was raw.",
+"Raw equals communication.",
+"Communication builds trust.",
+"Trust builds connection."
+],
+
+"tech_ruined_drivers": [
+"Cars fix mistakes.",
+"Drivers stop learning.",
+"Skill fades.",
+"Confidence becomes fake.",
+"That’s dangerous."
+],
+
+"ev_emotion_gap": [
+"EVs are fast.",
+"But not exciting.",
+"Excitement needs buildup.",
+"Instant removes buildup.",
+"That’s the problem."
+],
+
+"drivers_vs_passengers": [
+"Old drivers were operators.",
+"Modern drivers are passengers.",
+"Passengers don’t feel control.",
+"Control creates emotion.",
+"Emotion creates love."
+],
+
+"braking_feel": [
+"Old brakes talked.",
+"New brakes isolate.",
+"Isolation removes fear.",
+"No fear means no thrill.",
+"Simple."
+],
+
+"clutch_magic": [
+"The clutch is a conversation.",
+"You listen.",
+"You respond.",
+"That’s bonding.",
+"Machines rarely bond."
+],
+
+"first_car_memory": [
+"Everyone remembers their first car.",
+"Not their fastest.",
+"Not their best.",
+"Their first.",
+"Emotion beats numbers."
+],
+
+"cheap_fast_vs_expensive_slow": [
+"A cheap fun car beats a perfect one.",
+"Fun isn’t expensive.",
+"Fun is involvement.",
+"Involvement is cheap.",
+"Manufacturers forgot."
+],
+
+"why_people_modify": [
+"People modify for feel.",
+"Not for speed.",
+"Feel beats numbers.",
+"Always has.",
+"Always will."
+],
+
+"why_car_meets_exist": [
+"People want connection.",
+"Not transportation.",
+"Cars became culture.",
+"Not appliances.",
+"That matters."
 ]
 
-if not available:
-    used_topics.clear()
-    available = [k for k, v in TOPICS.items() if v["style"] == current_style]
+}
 
-topic_key = random.choice(available)
-used_topics.add(topic_key)
+# --------------------------------
+# WEIGHTED PICK
+# --------------------------------
+def weighted_pick(pool, memory):
+    keys=[]
+    weights=[]
+    for k in pool:
+        w = memory.get(k,1.0)
+        keys.append(k)
+        weights.append(w)
+    return random.choices(keys,weights=weights,k=1)[0]
 
-# -------------------------------------------------
-# SAVE MEMORY
-# -------------------------------------------------
-json.dump(list(used_topics), open(USED_TOPICS_FILE, "w", encoding="utf-8"), indent=2)
-json.dump(style_state, open(STYLE_STATE_FILE, "w", encoding="utf-8"), indent=2)
+topic = weighted_pick(TOPICS, brain["topics"])
+style = weighted_pick(STYLES, brain["styles"])
 
-# -------------------------------------------------
-# BUILD FINAL SCRIPT
-# -------------------------------------------------
-lines = TOPICS[topic_key]["lines"]
+if topic in used:
+    topic = random.choice(list(TOPICS.keys()))
 
-ending = random.choice([
-    "Once you notice this, driving feels different forever.",
-    "That’s why some cars stay in your memory forever.",
-    "And now you understand why driving used to feel alive."
-])
+used.add(topic)
+json.dump(list(used),open(USED_FILE,"w"))
 
-script = " ".join(lines) + " " + ending
+lines = TOPICS[topic]
+random.shuffle(lines)
 
-with open("script.txt", "w", encoding="utf-8") as f:
+# --------------------------------
+# SCRIPT BUILDER
+# --------------------------------
+if style=="aggressive":
+    script = f"{lines[0]} {lines[1]} {lines[2]} {lines[3]} {lines[4]} Once you notice this, you can’t unfeel it."
+
+elif style=="mysterious":
+    script = f"Nobody explains this. {lines[0]} {lines[2]} {lines[4]} Think about that."
+
+elif style=="story":
+    script = f"I once drove an old car. {lines[0]} {lines[1]} {lines[3]} {lines[4]} It changed how I see cars."
+
+elif style=="educational":
+    script = f"Here’s something most people miss. {lines[0]} {lines[1]} {lines[2]} {lines[3]} {lines[4]}"
+
+else: # controversial
+    script = f"People won’t like this. {lines[0]} {lines[1]} {lines[2]} {lines[3]} {lines[4]}"
+
+with open("script.txt","w",encoding="utf-8") as f:
     f.write(script)
 
-print(f"🔥 Script generated | style={current_style} | topic={topic_key}")
+print("Topic:",topic)
+print("Style:",style)
 print(script)
