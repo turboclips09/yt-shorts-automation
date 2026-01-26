@@ -3,6 +3,7 @@ import json
 import random
 import datetime
 import sys
+import time
 
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -42,86 +43,106 @@ with open("metadata.json", "r", encoding="utf-8") as f:
     meta = json.load(f)
 
 # -------------------------------------------------
-# RANDOM PUBLISH TIME (1–18 HOURS FROM NOW)
+# DECIDE DAILY UPLOAD COUNT (2 OR 3)
 # -------------------------------------------------
-publish_at = (
-    datetime.datetime.utcnow()
-    + datetime.timedelta(hours=random.randint(1, 18))
-).replace(microsecond=0).isoformat() + "Z"
+uploads_today = random.choice([2, 3])
+print(f"📤 Will upload {uploads_today} videos today")
 
 # -------------------------------------------------
-# UPLOAD VIDEO (UNLISTED FIRST)
+# MAIN LOOP
 # -------------------------------------------------
-upload = youtube.videos().insert(
-    part="snippet,status",
-    body={
-        "snippet": {
-            "title": meta["title"],
-            "description": meta["description"],
-            "tags": meta["tags"],
-            "categoryId": "24"  # Entertainment
-        },
-        "status": {
-            "privacyStatus": "unlisted",
-            "selfDeclaredMadeForKids": False
-        }
-    },
-    media_body=MediaFileUpload("final.mp4", resumable=True)
-)
+for i in range(uploads_today):
 
-try:
-    video = upload.execute()
+    print(f"\n🚀 Uploading video {i+1}/{uploads_today}")
 
-except ResumableUploadError as e:
-    if "uploadLimitExceeded" in str(e):
-        print("🚫 Daily upload limit reached. Skipping upload safely.")
-        sys.exit(0)
-    else:
-        raise
+    # RANDOM PUBLISH TIME (1–18 HOURS FROM NOW)
+    publish_at = (
+        datetime.datetime.utcnow()
+        + datetime.timedelta(hours=random.randint(1, 18))
+    ).replace(microsecond=0).isoformat() + "Z"
 
-video_id = video["id"]
-print("✅ Uploaded (unlisted):", video_id)
-
-# -------------------------------------------------
-# AUTO COMMENT (NO PIN — API LIMITATION)
-# -------------------------------------------------
-try:
-    youtube.commentThreads().insert(
-        part="snippet",
+    # -------------------------------------------------
+    # UPLOAD VIDEO (UNLISTED FIRST)
+    # -------------------------------------------------
+    upload = youtube.videos().insert(
+        part="snippet,status",
         body={
             "snippet": {
-                "videoId": video_id,
-                "topLevelComment": {
-                    "snippet": {
-                        "textOriginal": meta.get(
-                            "comment",
-                            "Do you agree with this, or am I wrong? 👇"
-                        )
+                "title": meta["title"],
+                "description": meta["description"],
+                "tags": meta["tags"],
+                "categoryId": "24"
+            },
+            "status": {
+                "privacyStatus": "unlisted",
+                "selfDeclaredMadeForKids": False
+            }
+        },
+        media_body=MediaFileUpload("final.mp4", resumable=True)
+    )
+
+    try:
+        video = upload.execute()
+
+    except ResumableUploadError as e:
+        if "uploadLimitExceeded" in str(e):
+            print("🚫 Daily upload limit reached. Skipping remaining uploads.")
+            sys.exit(0)
+        else:
+            raise
+
+    video_id = video["id"]
+    print("✅ Uploaded (unlisted):", video_id)
+
+    # -------------------------------------------------
+    # AUTO COMMENT (BEST EFFORT)
+    # -------------------------------------------------
+    try:
+        youtube.commentThreads().insert(
+            part="snippet",
+            body={
+                "snippet": {
+                    "videoId": video_id,
+                    "topLevelComment": {
+                        "snippet": {
+                            "textOriginal": meta.get(
+                                "comment",
+                                "Do you agree with this, or am I wrong? 👇"
+                            )
+                        }
                     }
                 }
+            }
+        ).execute()
+
+        print("💬 Comment posted")
+
+    except HttpError as e:
+        print("⚠️ Comment failed (non-critical)")
+
+    # -------------------------------------------------
+    # SCHEDULE VIDEO
+    # -------------------------------------------------
+    youtube.videos().update(
+        part="status",
+        body={
+            "id": video_id,
+            "status": {
+                "privacyStatus": "private",
+                "publishAt": publish_at,
+                "selfDeclaredMadeForKids": False
             }
         }
     ).execute()
 
-    print("💬 Comment posted")
+    print("⏰ Video scheduled for:", publish_at)
 
-except HttpError as e:
-    print("⚠️ Comment failed (non-critical)")
-    print(e)
+    # -------------------------------------------------
+    # RANDOM WAIT BEFORE NEXT UPLOAD
+    # -------------------------------------------------
+    if i < uploads_today - 1:
+        wait = random.randint(180, 900)  # 3–15 minutes
+        print(f"⏳ Waiting {wait} seconds before next upload...")
+        time.sleep(wait)
 
-# -------------------------------------------------
-# SCHEDULE VIDEO
-# -------------------------------------------------
-youtube.videos().update(
-    part="status",
-    body={
-        "id": video_id,
-        "status": {
-            "privacyStatus": "private",
-            "publishAt": publish_at,
-            "selfDeclaredMadeForKids": False
-        }
-    }
-).execute()
-
-print("⏰ Video scheduled for:", publish_at)
+print("\n🎉 DAILY UPLOAD CYCLE COMPLETE")
