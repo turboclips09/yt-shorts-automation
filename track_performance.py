@@ -4,16 +4,16 @@ import datetime
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-# --------------------------------
+# -----------------------------------
 # ENV
-# --------------------------------
+# -----------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
-# --------------------------------
-# AUTH (SAME SCOPE AS UPLOAD)
-# --------------------------------
+# -----------------------------------
+# AUTH
+# -----------------------------------
 creds = Credentials(
     None,
     refresh_token=REFRESH_TOKEN,
@@ -27,49 +27,51 @@ creds = Credentials(
 
 youtube = build("youtube", "v3", credentials=creds)
 
-# --------------------------------
-# LOAD HISTORY
-# --------------------------------
-FILE = "performance.json"
+# -----------------------------------
+# LOAD BRAIN
+# -----------------------------------
+BRAIN_FILE = "brain.json"
 
-if os.path.exists(FILE):
-    history = json.load(open(FILE))
+if os.path.exists(BRAIN_FILE):
+    brain = json.load(open(BRAIN_FILE))
 else:
-    history = []
+    brain = {"topics": {}, "styles": {}, "history": []}
 
-# --------------------------------
+# -----------------------------------
 # GET LAST 5 VIDEOS
-# --------------------------------
-resp = youtube.search().list(
+# -----------------------------------
+search = youtube.search().list(
     part="id",
     forMine=True,
     type="video",
-    maxResults=5,
-    order="date"
+    order="date",
+    maxResults=5
 ).execute()
 
-video_ids = [i["id"]["videoId"] for i in resp["items"]]
+video_ids = [i["id"]["videoId"] for i in search["items"]]
 
 if not video_ids:
     print("No videos found")
     exit()
 
 stats = youtube.videos().list(
-    part="statistics,snippet",
+    part="snippet,statistics",
     id=",".join(video_ids)
 ).execute()
 
 now = datetime.datetime.utcnow().isoformat()
 
 for v in stats["items"]:
-    history.append({
+    brain["history"].append({
         "video_id": v["id"],
         "title": v["snippet"]["title"],
-        "views": int(v["statistics"].get("viewCount",0)),
-        "likes": int(v["statistics"].get("likeCount",0)),
+        "views": int(v["statistics"].get("viewCount", 0)),
         "time": now
     })
 
-json.dump(history[-500:], open(FILE,"w"), indent=2)
+# Keep only last 500 records
+brain["history"] = brain["history"][-500:]
 
-print("✅ Performance updated")
+json.dump(brain, open(BRAIN_FILE, "w"), indent=2)
+
+print("✅ Performance tracked")
