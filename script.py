@@ -2,283 +2,189 @@ import random
 import json
 import os
 
-# --------------------------------
-# FILES
-# --------------------------------
-BRAIN_FILE = "brain.json"
 USED_FILE = "used_topics.json"
-
-if os.path.exists(BRAIN_FILE):
-    brain = json.load(open(BRAIN_FILE))
-else:
-    brain = {"topics": {}, "styles": {}}
 
 if os.path.exists(USED_FILE):
     used = set(json.load(open(USED_FILE)))
 else:
     used = set()
 
-# --------------------------------
-# STYLES
-# --------------------------------
-STYLES = [
-    "aggressive",
-    "mysterious",
-    "story",
-    "educational",
-    "controversial"
-]
-
-# --------------------------------
-# MASSIVE TOPIC DATABASE
-# --------------------------------
+# -------------------------------------------------
+# STORY ENGINE WITH EMOTIONAL WAVES
+# -------------------------------------------------
 TOPICS = {
 
-"manual_magic": {
-"hooks":[
-"Manual cars aren’t faster. But they feel better.",
-"Manual cars refuse to die. Here’s why."
+"manual_driver_story": {
+"hook":[
+"I didn’t expect a manual car to change anything.",
+"I thought manuals were outdated."
 ],
-"ideas":[
-"Manuals force you to think.",
-"Every shift is a decision.",
-"Decisions create involvement.",
-"Involvement creates emotion.",
-"Emotion creates attachment."
+"human":[
+"Then I drove one.",
+"I borrowed an old manual for a day."
+],
+"contrast":[
+"It wasn’t fast.",
+"It wasn’t perfect."
+],
+"tension":[
+"But I couldn’t stop smiling.",
+"I felt connected."
+],
+"reveal":[
+"Every shift is a choice.",
+"Choices create involvement.",
+"Involvement creates emotion."
 ],
 "payoff":[
-"That’s why manuals feel alive.",
-"Automation killed the magic."
+"That’s why manuals survive."
+],
+"loop":[
+"And this explains something bigger about modern life."
 ]
 },
 
-"old_vs_new": {
-"hooks":[
-"Old cars felt slower. But more exciting.",
-"Modern cars are faster. Yet boring."
+"old_car_feels_alive": {
+"hook":[
+"Old cars feel alive.",
+"Modern cars feel finished."
 ],
-"ideas":[
+"human":[
+"I noticed this on a quiet road one night."
+],
+"contrast":[
+"The old car felt rough.",
+"The new one felt smooth."
+],
+"tension":[
+"But only one felt exciting."
+],
+"reveal":[
 "Old cars punished mistakes.",
-"You had to pay attention.",
-"Modern cars fix everything.",
+"Modern cars erase them.",
 "No consequences means no thrill."
 ],
 "payoff":[
-"That’s what disappeared.",
-"And you feel it every drive."
+"That’s what disappeared."
+],
+"loop":[
+"And you feel it everywhere."
 ]
 },
 
-"sound_psychology": {
-"hooks":[
-"Sound matters more than speed.",
+"sound_speed_psych": {
+"hook":[
 "A loud slow car can feel faster than a silent fast one."
 ],
-"ideas":[
+"human":[
+"I didn’t believe it until I felt it."
+],
+"contrast":[
+"Same road.",
+"Same speed."
+],
+"tension":[
+"Completely different feeling."
+],
+"reveal":[
 "Your brain measures speed using sound.",
-"Sound creates drama.",
-"Drama creates excitement."
+"Sound creates drama."
 ],
 "payoff":[
-"Silence feels empty.",
-"Speed without sound feels dead."
+"Silence feels empty."
+],
+"loop":[
+"EVs accidentally proved it."
 ]
 },
 
-"weight_problem": {
-"hooks":[
-"Cars didn’t get boring. They got heavy.",
-"Weight is the real fun killer."
+"drivers_to_passengers": {
+"hook":[
+"Drivers didn’t change.",
+"Cars did."
 ],
-"ideas":[
-"Heavy cars react slower.",
-"Slower reactions feel dull.",
-"Light cars feel playful."
+"human":[
+"My dad drove differently than I do."
 ],
-"payoff":[
-"Physics never lies.",
-"Playful feels fun."
-]
-},
-
-"ev_emotion_gap": {
-"hooks":[
-"EVs feel fast. But not exciting.",
-"Electric cars hide a big problem."
+"contrast":[
+"He controlled everything.",
+"My car controls itself."
 ],
-"ideas":[
-"They’re silent.",
-"They have no build-up.",
-"Your brain needs build-up.",
-"Build-up creates anticipation."
+"tension":[
+"That feels safer.",
+"But also emptier."
+],
+"reveal":[
+"Less control removes involvement.",
+"Less involvement removes emotion."
 ],
 "payoff":[
-"That’s why EVs feel impressive, not thrilling."
-]
-},
-
-"steering_feel": {
-"hooks":[
-"Modern steering feels numb.",
-"It wasn’t always this way."
+"That’s why driving feels different."
 ],
-"ideas":[
-"Old steering transmitted forces.",
-"You felt grip through your hands.",
-"Feeling creates trust.",
-"Trust creates confidence."
-],
-"payoff":[
-"That’s what modern cars lost."
-]
-},
-
-"cheap_fun_cars": {
-"hooks":[
-"Fun isn’t expensive.",
-"Some cheap cars are more fun than supercars."
-],
-"ideas":[
-"Low weight.",
-"Simple engines.",
-"Nothing filtered.",
-"Everything mechanical."
-],
-"payoff":[
-"Fun was never about money."
+"loop":[
+"And it wasn’t accidental."
 ]
 },
 
 "first_car_memory": {
-"hooks":[
-"You remember your first car.",
-"Not your fastest. Not your best."
+"hook":[
+"You remember your first car."
 ],
-"ideas":[
-"You remember how it made you feel.",
-"Emotion beats numbers.",
+"human":[
+"Not your fastest.",
+"Not your best."
+],
+"contrast":[
+"Your first."
+],
+"tension":[
+"Why?"
+],
+"reveal":[
+"Because emotion beats numbers."
+],
+"payoff":[
 "Always has."
 ],
-"payoff":[
-"That’s why nostalgia never dies."
-]
-},
-
-"modding_culture": {
-"hooks":[
-"People don’t modify for speed.",
-"They modify for feel."
-],
-"ideas":[
-"Exhaust for sound.",
-"Suspension for response.",
-"Wheels for stance.",
-"Steering for feedback."
-],
-"payoff":[
-"Feel matters more than numbers."
-]
-},
-
-"drivers_vs_passengers": {
-"hooks":[
-"Old drivers were operators.",
-"Modern drivers are passengers."
-],
-"ideas":[
-"Cars make decisions now.",
-"Less control.",
-"Less involvement.",
-"Less emotion."
-],
-"payoff":[
-"That’s why driving feels different."
+"loop":[
+"And always will."
 ]
 }
 
 }
 
-# --------------------------------
-# WEIGHTED PICK
-# --------------------------------
-def weighted_pick(pool, memory):
-    keys=[]
-    weights=[]
-    for k in pool:
-        keys.append(k)
-        weights.append(memory.get(k,1.0))
-    return random.choices(keys,weights=weights,k=1)[0]
+# -------------------------------------------------
+# PICK UNUSED TOPIC
+# -------------------------------------------------
+available = [k for k in TOPICS if k not in used]
+if not available:
+    used.clear()
+    available = list(TOPICS.keys())
 
-topic = weighted_pick(TOPICS, brain.get("topics",{}))
-style = weighted_pick(STYLES, brain.get("styles",{}))
-
-if topic in used:
-    topic = random.choice(list(TOPICS.keys()))
-
+topic = random.choice(available)
 used.add(topic)
-json.dump(list(used),open(USED_FILE,"w"))
+json.dump(list(used), open(USED_FILE,"w"))
 
-data = TOPICS[topic]
+t = TOPICS[topic]
 
-# --------------------------------
-# SCRIPT BUILDERS
-# --------------------------------
-def aggressive(d):
-    return (
-        f"{random.choice(d['hooks'])} "
-        f"{d['ideas'][0]} {d['ideas'][1]} {d['ideas'][2]} "
-        f"{random.choice(d['payoff'])} "
-        "Once you notice this, you can’t unfeel it."
-    )
+# -------------------------------------------------
+# BUILD STORY
+# -------------------------------------------------
+script = " ".join([
+    random.choice(t["hook"]),
+    random.choice(t["human"]),
+    random.choice(t["contrast"]),
+    random.choice(t["tension"]),
+    random.choice(t["reveal"]),
+    random.choice(t["payoff"]),
+    random.choice(t["loop"])
+])
 
-def mysterious(d):
-    return (
-        f"Nobody talks about this. "
-        f"{random.choice(d['hooks'])} "
-        f"{d['ideas'][0]} {d['ideas'][2]} "
-        f"{random.choice(d['payoff'])}"
-    )
-
-def story(d):
-    return (
-        f"I noticed something while driving. "
-        f"{random.choice(d['hooks'])} "
-        f"{d['ideas'][0]} {d['ideas'][1]} "
-        f"{random.choice(d['payoff'])}"
-    )
-
-def educational(d):
-    return (
-        f"Here’s something most people miss. "
-        f"{random.choice(d['hooks'])} "
-        f"{d['ideas'][0]} {d['ideas'][1]} {d['ideas'][2]} "
-        f"{random.choice(d['payoff'])}"
-    )
-
-def controversial(d):
-    return (
-        f"People won’t like this. "
-        f"{random.choice(d['hooks'])} "
-        f"{d['ideas'][1]} {d['ideas'][2]} "
-        f"{random.choice(d['payoff'])}"
-    )
-
-STYLE_FUNCS = {
-"aggressive": aggressive,
-"mysterious": mysterious,
-"story": story,
-"educational": educational,
-"controversial": controversial
-}
-
-script = STYLE_FUNCS[style](data)
-
-# --------------------------------
+# -------------------------------------------------
 # SAVE
-# --------------------------------
+# -------------------------------------------------
 with open("script.txt","w",encoding="utf-8") as f:
     f.write(script)
 
 print("Topic:",topic)
-print("Style:",style)
 print(script)
