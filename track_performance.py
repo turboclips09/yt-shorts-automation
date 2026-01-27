@@ -4,30 +4,32 @@ import datetime
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
-# -----------------------------
+# --------------------------------
 # ENV
-# -----------------------------
+# --------------------------------
 CLIENT_ID = os.getenv("YT_CLIENT_ID")
 CLIENT_SECRET = os.getenv("YT_CLIENT_SECRET")
 REFRESH_TOKEN = os.getenv("YT_REFRESH_TOKEN")
 
-# -----------------------------
-# AUTH
-# -----------------------------
+# --------------------------------
+# AUTH (SAME SCOPE AS UPLOAD)
+# --------------------------------
 creds = Credentials(
     None,
     refresh_token=REFRESH_TOKEN,
     token_uri="https://oauth2.googleapis.com/token",
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
-    scopes=["https://www.googleapis.com/auth/youtube.readonly"]
+    scopes=[
+        "https://www.googleapis.com/auth/youtube.force-ssl"
+    ]
 )
 
 youtube = build("youtube", "v3", credentials=creds)
 
-# -----------------------------
+# --------------------------------
 # LOAD HISTORY
-# -----------------------------
+# --------------------------------
 FILE = "performance.json"
 
 if os.path.exists(FILE):
@@ -35,9 +37,9 @@ if os.path.exists(FILE):
 else:
     history = []
 
-# -----------------------------
+# --------------------------------
 # GET LAST 5 VIDEOS
-# -----------------------------
+# --------------------------------
 resp = youtube.search().list(
     part="id",
     forMine=True,
@@ -47,6 +49,10 @@ resp = youtube.search().list(
 ).execute()
 
 video_ids = [i["id"]["videoId"] for i in resp["items"]]
+
+if not video_ids:
+    print("No videos found")
+    exit()
 
 stats = youtube.videos().list(
     part="statistics,snippet",
