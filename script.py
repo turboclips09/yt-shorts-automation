@@ -1,188 +1,113 @@
-import random
-import json
-import os
+import random, json, os
 
+BRAIN_FILE = "brain.json"
 USED_FILE = "used_topics.json"
+
+# -----------------------
+# LOAD MEMORY
+# -----------------------
+brain = json.load(open(BRAIN_FILE))
 
 if os.path.exists(USED_FILE):
     used = set(json.load(open(USED_FILE)))
 else:
     used = set()
 
-# -------------------------------------------------
-# STORY ENGINE WITH EMOTIONAL WAVES
-# -------------------------------------------------
+# -----------------------
+# TOPIC LIBRARY (EXPANDABLE)
+# -----------------------
 TOPICS = {
 
-"manual_driver_story": {
-"hook":[
-"I didn’t expect a manual car to change anything.",
-"I thought manuals were outdated."
+"manual_identity": [
+"Most people think manuals are about speed.",
+"They’re not.",
+"They’re about responsibility.",
+"When you mess up, you feel it.",
+"And strangely… that feels good.",
+"Because effort creates attachment.",
+"That’s why manuals refuse to die."
 ],
-"human":[
-"Then I drove one.",
-"I borrowed an old manual for a day."
-],
-"contrast":[
-"It wasn’t fast.",
-"It wasn’t perfect."
-],
-"tension":[
-"But I couldn’t stop smiling.",
-"I felt connected."
-],
-"reveal":[
-"Every shift is a choice.",
-"Choices create involvement.",
-"Involvement creates emotion."
-],
-"payoff":[
-"That’s why manuals survive."
-],
-"loop":[
-"And this explains something bigger about modern life."
-]
-},
 
-"old_car_feels_alive": {
-"hook":[
-"Old cars feel alive.",
-"Modern cars feel finished."
+"old_vs_new_feel": [
+"Old cars felt alive.",
+"Not comfortable.",
+"Not perfect.",
+"Alive.",
+"They fought you sometimes.",
+"Modern cars remove the fight.",
+"And they removed the feeling too."
 ],
-"human":[
-"I noticed this on a quiet road one night."
-],
-"contrast":[
-"The old car felt rough.",
-"The new one felt smooth."
-],
-"tension":[
-"But only one felt exciting."
-],
-"reveal":[
-"Old cars punished mistakes.",
-"Modern cars erase them.",
-"No consequences means no thrill."
-],
-"payoff":[
-"That’s what disappeared."
-],
-"loop":[
-"And you feel it everywhere."
-]
-},
 
-"sound_speed_psych": {
-"hook":[
-"A loud slow car can feel faster than a silent fast one."
+"sound_psychology": [
+"Your brain uses sound to measure speed.",
+"Loud feels fast.",
+"Quiet feels slow.",
+"That’s why slow loud cars feel exciting.",
+"And fast silent cars feel empty.",
+"Speed is math.",
+"Sound is emotion."
 ],
-"human":[
-"I didn’t believe it until I felt it."
-],
-"contrast":[
-"Same road.",
-"Same speed."
-],
-"tension":[
-"Completely different feeling."
-],
-"reveal":[
-"Your brain measures speed using sound.",
-"Sound creates drama."
-],
-"payoff":[
-"Silence feels empty."
-],
-"loop":[
-"EVs accidentally proved it."
-]
-},
 
-"drivers_to_passengers": {
-"hook":[
-"Drivers didn’t change.",
-"Cars did."
-],
-"human":[
-"My dad drove differently than I do."
-],
-"contrast":[
-"He controlled everything.",
-"My car controls itself."
-],
-"tension":[
-"That feels safer.",
-"But also emptier."
-],
-"reveal":[
-"Less control removes involvement.",
-"Less involvement removes emotion."
-],
-"payoff":[
-"That’s why driving feels different."
-],
-"loop":[
-"And it wasn’t accidental."
-]
-},
-
-"first_car_memory": {
-"hook":[
-"You remember your first car."
-],
-"human":[
+"first_car_memory": [
+"You remember your first car.",
 "Not your fastest.",
-"Not your best."
+"Not your best.",
+"Your first.",
+"Because that’s where emotion formed.",
+"Emotion beats horsepower.",
+"Every time."
 ],
-"contrast":[
-"Your first."
-],
-"tension":[
-"Why?"
-],
-"reveal":[
-"Because emotion beats numbers."
-],
-"payoff":[
-"Always has."
-],
-"loop":[
-"And always will."
+
+"drivers_to_passengers": [
+"Old drivers were operators.",
+"Modern drivers are passengers.",
+"Cars decide more than you do.",
+"Less control.",
+"Less involvement.",
+"Less emotion.",
+"That’s the trade."
 ]
-}
 
 }
 
-# -------------------------------------------------
-# PICK UNUSED TOPIC
-# -------------------------------------------------
-available = [k for k in TOPICS if k not in used]
-if not available:
-    used.clear()
-    available = list(TOPICS.keys())
+# -----------------------
+# WEIGHTED PICK
+# -----------------------
+def weighted_pick():
+    keys=[]
+    weights=[]
+    for k in TOPICS:
+        w = brain["topics"].get(k,1.0)
+        keys.append(k)
+        weights.append(w)
+    return random.choices(keys,weights=weights,k=1)[0]
 
-topic = random.choice(available)
+topic = weighted_pick()
+
+if topic in used:
+    topic = random.choice(list(TOPICS.keys()))
+
 used.add(topic)
-json.dump(list(used), open(USED_FILE,"w"))
+json.dump(list(used),open(USED_FILE,"w"))
 
-t = TOPICS[topic]
+lines = TOPICS[topic]
+random.shuffle(lines)
 
-# -------------------------------------------------
-# BUILD STORY
-# -------------------------------------------------
+# -----------------------
+# BUILD 45–60s SCRIPT
+# -----------------------
 script = " ".join([
-    random.choice(t["hook"]),
-    random.choice(t["human"]),
-    random.choice(t["contrast"]),
-    random.choice(t["tension"]),
-    random.choice(t["reveal"]),
-    random.choice(t["payoff"]),
-    random.choice(t["loop"])
+"Here’s something nobody tells you about cars.",
+lines[0],
+lines[1],
+lines[2],
+lines[3],
+lines[4],
+lines[5],
+lines[6],
+"Once you notice this, you can’t unsee it."
 ])
 
-# -------------------------------------------------
-# SAVE
-# -------------------------------------------------
 with open("script.txt","w",encoding="utf-8") as f:
     f.write(script)
 
