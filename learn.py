@@ -1,24 +1,51 @@
 import json
+import os
 
-brain=json.load(open("brain.json"))
-perf=json.load(open("performance.json"))
+BRAIN_FILE = "brain.json"
 
-if len(perf)<30:
+# ---------------------------------
+# LOAD BRAIN
+# ---------------------------------
+if not os.path.exists(BRAIN_FILE):
+    print("No brain.json found")
+    exit()
+
+brain = json.load(open(BRAIN_FILE))
+
+history = brain.get("history", [])
+
+# ---------------------------------
+# REQUIRE MIN DATA
+# ---------------------------------
+if len(history) < 30:
     print("Not enough data yet")
     exit()
 
-recent=perf[-30:]
-avg=sum(v["views"] for v in recent)/len(recent)
+recent = history[-30:]
 
+avg_views = sum(v["views"] for v in recent) / len(recent)
+
+# ---------------------------------
+# LEARN TOPICS FROM TITLES
+# ---------------------------------
 for v in recent:
-    title=v["title"].lower()
-    for t in brain["topics"]:
-        if t.replace("_"," ") in title:
-            brain["topics"][t]=brain["topics"].get(t,1)
-            if v["views"]>avg:
-                brain["topics"][t]*=1.08
-            else:
-                brain["topics"][t]*=0.93
+    title = v["title"].lower()
+    views = v["views"]
 
-json.dump(brain,open("brain.json","w"),indent=2)
-print("Brain updated")
+    for topic in brain["topics"]:
+        key = topic.replace("_", " ")
+
+        if key in title:
+            brain["topics"][topic] = brain["topics"].get(topic, 1.0)
+
+            if views > avg_views:
+                brain["topics"][topic] *= 1.08   # promote
+            else:
+                brain["topics"][topic] *= 0.94   # demote gently
+
+# ---------------------------------
+# SAVE
+# ---------------------------------
+json.dump(brain, open(BRAIN_FILE, "w"), indent=2)
+
+print("🧠 Brain updated successfully")
