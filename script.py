@@ -1,21 +1,30 @@
-import json, os
+import json, os, random
 
 LIB_FILE = "script_library.json"
-
-if not os.path.exists(LIB_FILE):
-    print("Library missing")
-    exit()
+BRAIN_FILE = "brain.json"
 
 lib = json.load(open(LIB_FILE))
+brain = json.load(open(BRAIN_FILE))
 
 if not lib["unused"]:
-    print("Script library empty")
+    print("Library empty")
     exit()
 
-script = lib["unused"].pop(0)
-lib["used"].append(script)
+entry = lib["unused"].pop(0)
+
+script = entry["script"]
+
+meta = {
+    "hook": entry["hook"],
+    "angle": entry["angle"],
+    "engine": entry["engine"],
+    "topic": entry["topic"]
+}
+
+brain["last_meta"] = meta
 
 json.dump(lib, open(LIB_FILE,"w"), indent=2)
+json.dump(brain, open(BRAIN_FILE,"w"), indent=2)
 
 open("script.txt","w",encoding="utf-8").write(script)
 print(script)
