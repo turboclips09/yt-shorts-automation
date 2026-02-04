@@ -1,31 +1,24 @@
-import os, json, requests, random
+import os, json, requests
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 brain = json.load(open("brain.json"))
-history = brain.get("history", [])[-120:]
 
-def top_weights(bucket):
-    if bucket not in brain:
-        return []
-    return sorted(
-        brain[bucket].items(),
-        key=lambda x: x[1],
-        reverse=True
-    )[:3]
+def top(bucket):
+    return sorted(bucket.items(), key=lambda x:x[1], reverse=True)[:4]
 
-top_hooks = top_weights("hooks")
-top_angles = top_weights("angles")
-top_engines = top_weights("engines")
-top_topics = top_weights("topics")
+hooks = top(brain["hooks"])
+angles = top(brain["angles"])
+topics = top(brain["topics"])
+niches = top(brain["niches"])
 
 prompt = f"""
 You are an autonomous YouTube Shorts script engine.
 
 Generate 120 JSON objects.
 
-Each object format:
+Each object:
 
 {{
  "script": "45-65 word YouTube Shorts script",
@@ -35,50 +28,37 @@ Each object format:
  "topic": "driving_feel | car_psychology | engineering_truth | nostalgia"
 }}
 
-Rules:
-- Strong hook in first sentence
-- Curiosity-driven ending
+Primary Niches To Generate:
+{niches}
+
+High Performing Hooks:
+{hooks}
+
+High Performing Angles:
+{angles}
+
+High Performing Topics:
+{topics}
+
+Instructions:
+- Avoid saturated patterns
+- Favor high performing ones
+- 20% experimental scripts
+- Strong curiosity endings
 - No emojis
 - No hashtags
 - No titles
-- One paragraph only
-
-Learning Insights:
-
-High Performing Hooks:
-{top_hooks}
-
-High Performing Angles:
-{top_angles}
-
-High Performing Engines:
-{top_engines}
-
-High Performing Topics:
-{top_topics}
-
-Instructions:
-- Bias generation toward high-performing patterns
-- Still generate 20% experimental combinations
-- Avoid repeating identical ideas
-- Create emotionally engaging and curiosity-heavy scripts
+- One paragraph
 
 Return ONLY JSON array.
 """
 
-headers = {
-    "Authorization": f"Bearer {HF_TOKEN}"
-}
+headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 payload = {
     "inputs": prompt,
-    "parameters": {
-        "max_new_tokens": 4000,
-        "temperature": 0.9
-    }
+    "parameters": {"max_new_tokens":4000,"temperature":0.9}
 }
-
-print("Generating monthly script library...")
 
 r = requests.post(
     f"https://api-inference.huggingface.co/models/{MODEL}",
@@ -87,15 +67,13 @@ r = requests.post(
     timeout=120
 )
 
-data = r.json()
-text = data[0]["generated_text"]
+text = r.json()[0]["generated_text"]
 scripts = json.loads(text[text.find("["):])
 
-library = {
-    "unused": scripts,
-    "used": []
-}
+json.dump(
+    {"unused":scripts,"used":[]},
+    open("script_library.json","w"),
+    indent=2
+)
 
-json.dump(library, open("script_library.json","w"), indent=2)
-
-print("Saved", len(scripts), "scripts")
+print("Saved",len(scripts),"scripts")
