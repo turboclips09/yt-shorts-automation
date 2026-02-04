@@ -49,11 +49,11 @@ jobs:
           google-auth google-auth-oauthlib google-api-python-client
 
       # -----------------------------
-      # Monthly Script Generator
+      # Monthly Script Generator (OpenRouter)
       # -----------------------------
       - name: Monthly script refill
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
         run: python monthly_generator.py || echo "Monthly generator skipped"
 
       # -----------------------------
@@ -70,7 +70,7 @@ jobs:
           EOF
 
       # -----------------------------
-      # Generate Script (from library)
+      # Generate Script
       # -----------------------------
       - name: Generate script
         run: python script.py
