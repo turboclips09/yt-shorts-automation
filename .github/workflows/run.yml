@@ -2,7 +2,11 @@ name: yt-shorts-automation
 
 on:
   workflow_dispatch:
+
   schedule:
+    # Monthly script refill (1st of every month)
+    - cron: "0 0 1 * *"
+
     # Three chances per day
     - cron: "0 1 * * *"
     - cron: "0 9 * * *"
@@ -45,6 +49,14 @@ jobs:
           google-auth google-auth-oauthlib google-api-python-client
 
       # -----------------------------
+      # Monthly Script Generator
+      # -----------------------------
+      - name: Monthly script refill
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python monthly_generator.py || echo "Monthly generator skipped"
+
+      # -----------------------------
       # Random Gate (50% skip)
       # -----------------------------
       - name: Random gate
@@ -58,7 +70,7 @@ jobs:
           EOF
 
       # -----------------------------
-      # Generate Script
+      # Generate Script (from library)
       # -----------------------------
       - name: Generate script
         run: python script.py
