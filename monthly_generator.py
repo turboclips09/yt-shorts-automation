@@ -11,7 +11,7 @@ def top(bucket):
 hooks = top(brain.get("hooks", {}))
 angles = top(brain.get("angles", {}))
 topics = top(brain.get("topics", {}))
-niches = top(brain.get("niches", {"cars":1.0}))
+niches = top(brain.get("niches", {"cars": 1.0}))
 
 prompt = f"""
 You are an autonomous YouTube Shorts script engine.
@@ -67,23 +67,43 @@ payload = {
 
 print("Generating monthly script library...")
 
-r = requests.post(
-    f"https://router.huggingface.co/hf-inference/models/{MODEL}",
-    headers=headers,
-    json=payload,
-    timeout=180
-)
+try:
+    r = requests.post(
+        f"https://router.huggingface.co/hf-inference/models/{MODEL}",
+        headers=headers,
+        json=payload,
+        timeout=180
+    )
+except Exception as e:
+    print("Request failed:", e)
+    exit(0)
 
-data = r.json()
+if r.status_code != 200:
+    print("HF HTTP Error:", r.status_code)
+    print(r.text[:500])
+    exit(0)
 
-# ---------- SAFE HANDLING ----------
+raw = r.text.strip()
+
+if not raw:
+    print("Empty response from HF")
+    exit(0)
+
+try:
+    data = json.loads(raw)
+except Exception:
+    print("Non JSON response:")
+    print(raw[:500])
+    exit(0)
+
+# ----------------------------
 
 if isinstance(data, dict) and "error" in data:
     print("HF Error:", data["error"])
     exit(0)
 
 if not isinstance(data, list):
-    print("Unexpected HF response:", data)
+    print("Unexpected response format:", data)
     exit(0)
 
 if "generated_text" not in data[0]:
@@ -92,14 +112,16 @@ if "generated_text" not in data[0]:
 
 text = data[0]["generated_text"]
 
-json_start = text.find("[")
-json_text = text[json_start:]
+start = text.find("[")
+if start == -1:
+    print("JSON not found in model output")
+    exit(0)
 
-scripts = json.loads(json_text)
+scripts = json.loads(text[start:])
 
 json.dump(
     {"unused": scripts, "used": []},
-    open("script_library.json","w"),
+    open("script_library.json", "w"),
     indent=2
 )
 
