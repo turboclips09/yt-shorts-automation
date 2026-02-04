@@ -3,5 +3,13 @@
   "angles": {},
   "engines": {},
   "topics": {},
+  "niches": {
+    "cars": 1.0
+  },
+  "saturation": {
+    "hooks": {},
+    "angles": {},
+    "topics": {}
+  },
   "history": []
 }
