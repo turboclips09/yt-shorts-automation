@@ -1,7 +1,12 @@
 import os, json, requests
 
 HF_TOKEN = os.getenv("HF_TOKEN")
-MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+
+MODELS = [
+    "mistralai/Mistral-7B-Instruct-v0.3",
+    "HuggingFaceH4/zephyr-7b-beta",
+    "openchat/openchat-3.5-0106"
+]
 
 brain = json.load(open("brain.json"))
 
@@ -11,7 +16,7 @@ def top(bucket):
 hooks = top(brain.get("hooks", {}))
 angles = top(brain.get("angles", {}))
 topics = top(brain.get("topics", {}))
-niches = top(brain.get("niches", {"cars": 1.0}))
+niches = top(brain.get("niches", {"cars":1.0}))
 
 prompt = f"""
 You are an autonomous YouTube Shorts script engine.
@@ -65,63 +70,68 @@ payload = {
     }
 }
 
-print("Generating monthly script library...")
+def try_model(model):
+    print("Trying model:", model)
+    try:
+        r = requests.post(
+            f"https://router.huggingface.co/hf-inference/models/{model}",
+            headers=headers,
+            json=payload,
+            timeout=180
+        )
+    except Exception as e:
+        print("Request error:", e)
+        return None
 
-try:
-    r = requests.post(
-        f"https://router.huggingface.co/hf-inference/models/{MODEL}",
-        headers=headers,
-        json=payload,
-        timeout=180
-    )
-except Exception as e:
-    print("Request failed:", e)
+    if r.status_code != 200:
+        print("HTTP", r.status_code)
+        return None
+
+    if not r.text.strip():
+        print("Empty response")
+        return None
+
+    try:
+        data = json.loads(r.text)
+    except:
+        print("Non JSON response")
+        return None
+
+    if isinstance(data, dict) and "error" in data:
+        print("HF Error:", data["error"])
+        return None
+
+    if not isinstance(data, list):
+        print("Unexpected format")
+        return None
+
+    if "generated_text" not in data[0]:
+        print("Missing generated_text")
+        return None
+
+    return data[0]["generated_text"]
+
+text = None
+
+for m in MODELS:
+    text = try_model(m)
+    if text:
+        break
+
+if not text:
+    print("All models failed. Skipping monthly generation.")
     exit(0)
-
-if r.status_code != 200:
-    print("HF HTTP Error:", r.status_code)
-    print(r.text[:500])
-    exit(0)
-
-raw = r.text.strip()
-
-if not raw:
-    print("Empty response from HF")
-    exit(0)
-
-try:
-    data = json.loads(raw)
-except Exception:
-    print("Non JSON response:")
-    print(raw[:500])
-    exit(0)
-
-# ----------------------------
-
-if isinstance(data, dict) and "error" in data:
-    print("HF Error:", data["error"])
-    exit(0)
-
-if not isinstance(data, list):
-    print("Unexpected response format:", data)
-    exit(0)
-
-if "generated_text" not in data[0]:
-    print("Missing generated_text:", data)
-    exit(0)
-
-text = data[0]["generated_text"]
 
 start = text.find("[")
 if start == -1:
-    print("JSON not found in model output")
+    print("JSON not found in output")
     exit(0)
 
 scripts = json.loads(text[start:])
 
 json.dump(
     {"unused": scripts, "used": []},
-    open("script_library.json", "w"),
+    open("script_library.json","w"),
     indent=2
 )
 
