@@ -1,115 +1,206 @@
-import random, json, os
+import random
+import json
+import os
+import hashlib
+
+# =====================================================
+# FILES
+# =====================================================
 
 BRAIN_FILE = "brain.json"
-USED_FILE = "used_topics.json"
+USED_FILE = "used_scripts.json"
 
-# -----------------------
-# LOAD MEMORY
-# -----------------------
-brain = json.load(open(BRAIN_FILE))
+if os.path.exists(BRAIN_FILE):
+    brain = json.load(open(BRAIN_FILE))
+else:
+    brain = {"topics": {}, "styles": {}, "history": []}
 
 if os.path.exists(USED_FILE):
     used = set(json.load(open(USED_FILE)))
 else:
     used = set()
 
-# -----------------------
-# TOPIC LIBRARY (EXPANDABLE)
-# -----------------------
-TOPICS = {
+# =====================================================
+# CORE IDEA BANK (LARGE & EXPANDABLE)
+# =====================================================
 
-"manual_identity": [
-"Most people think manuals are about speed.",
-"They’re not.",
-"They’re about responsibility.",
-"When you mess up, you feel it.",
-"And strangely… that feels good.",
-"Because effort creates attachment.",
-"That’s why manuals refuse to die."
-],
-
-"old_vs_new_feel": [
-"Old cars felt alive.",
-"Not comfortable.",
-"Not perfect.",
-"Alive.",
-"They fought you sometimes.",
-"Modern cars remove the fight.",
-"And they removed the feeling too."
-],
-
-"sound_psychology": [
-"Your brain uses sound to measure speed.",
-"Loud feels fast.",
-"Quiet feels slow.",
-"That’s why slow loud cars feel exciting.",
-"And fast silent cars feel empty.",
-"Speed is math.",
-"Sound is emotion."
-],
-
-"first_car_memory": [
-"You remember your first car.",
-"Not your fastest.",
-"Not your best.",
-"Your first.",
-"Because that’s where emotion formed.",
-"Emotion beats horsepower.",
-"Every time."
-],
-
-"drivers_to_passengers": [
-"Old drivers were operators.",
-"Modern drivers are passengers.",
-"Cars decide more than you do.",
-"Less control.",
-"Less involvement.",
-"Less emotion.",
-"That’s the trade."
+HOOKS = [
+    "Nobody talks about this part of cars.",
+    "This is why your first car felt different.",
+    "Modern cars are fast… but something is missing.",
+    "Here’s the uncomfortable truth about driving.",
+    "This changes how you see cars forever.",
+    "Most people misunderstand what makes cars fun.",
+    "Car companies don’t want you to notice this."
 ]
 
-}
+OBSERVATIONS = [
+    "Old cars demanded attention.",
+    "Modern cars remove effort.",
+    "Drivers used to work with machines.",
+    "Now machines work around drivers.",
+    "Cars used to feel alive.",
+    "Cars now feel perfect.",
+    "Perfect feels empty."
+]
 
-# -----------------------
-# WEIGHTED PICK
-# -----------------------
-def weighted_pick():
-    keys=[]
-    weights=[]
-    for k in TOPICS:
-        w = brain["topics"].get(k,1.0)
-        keys.append(k)
-        weights.append(w)
-    return random.choices(keys,weights=weights,k=1)[0]
+PSYCHOLOGY = [
+    "Humans bond with things that fight back.",
+    "Emotion comes from effort.",
+    "Involvement creates attachment.",
+    "Control creates confidence.",
+    "Silence removes drama.",
+    "Friction creates memory.",
+    "Struggle creates meaning."
+]
 
-topic = weighted_pick()
+FACTS = [
+    "Older cars had mechanical steering.",
+    "Manual transmissions require constant decisions.",
+    "Modern cars filter feedback digitally.",
+    "Cars today weigh hundreds of kilos more.",
+    "Electronics stop mistakes instantly.",
+    "EVs remove engine sound completely.",
+    "Stability systems intervene before drivers feel danger."
+]
 
-if topic in used:
-    topic = random.choice(list(TOPICS.keys()))
+MICRO_STORIES = [
+    "I once drove an old beater that felt alive.",
+    "Someone handed me the keys to an old manual.",
+    "I expected a supercar to blow my mind.",
+    "I drove a modern car right after an old one.",
+    "I didn’t understand this until I felt it."
+]
 
-used.add(topic)
-json.dump(list(used),open(USED_FILE,"w"))
+REVEALS = [
+    "Fun was never about speed.",
+    "The thrill wasn’t lost. It was engineered out.",
+    "Cars didn’t get boring. They got safe.",
+    "Comfort replaced connection.",
+    "We didn’t change. The machines did."
+]
 
-lines = TOPICS[topic]
-random.shuffle(lines)
+LOOPS = [
+    "Once you notice this, driving feels different.",
+    "You can’t unsee this now.",
+    "Think about this next time you drive.",
+    "Watch this again and it hits harder.",
+    "Most people never realize this."
+]
 
-# -----------------------
-# BUILD 45–60s SCRIPT
-# -----------------------
-script = " ".join([
-"Here’s something nobody tells you about cars.",
-lines[0],
-lines[1],
-lines[2],
-lines[3],
-lines[4],
-lines[5],
-lines[6],
-"Once you notice this, you can’t unsee it."
-])
+CTA_SOFT = [
+    "Follow for daily car psychology.",
+    "Follow if cars live in your head.",
+    "More hidden car truths coming."
+]
 
-with open("script.txt","w",encoding="utf-8") as f:
-    f.write(script)
+# =====================================================
+# STORY ENGINES (STRUCTURES)
+# =====================================================
 
-print("Topic:",topic)
-print(script)
+def engine_story_arc():
+    return [
+        random.choice(HOOKS),
+        random.choice(MICRO_STORIES),
+        random.choice(OBSERVATIONS),
+        random.choice(FACTS),
+        random.choice(PSYCHOLOGY),
+        random.choice(REVEALS),
+        random.choice(LOOPS)
+    ]
+
+def engine_contrast():
+    return [
+        random.choice(HOOKS),
+        "Old cars demanded involvement.",
+        "Modern cars remove involvement.",
+        random.choice(FACTS),
+        random.choice(PSYCHOLOGY),
+        random.choice(REVEALS),
+        random.choice(LOOPS)
+    ]
+
+def engine_confession():
+    return [
+        "I didn’t believe this at first.",
+        random.choice(MICRO_STORIES),
+        random.choice(FACTS),
+        random.choice(PSYCHOLOGY),
+        random.choice(REVEALS),
+        random.choice(LOOPS)
+    ]
+
+def engine_fact_chain():
+    return [
+        random.choice(HOOKS),
+        random.choice(FACTS),
+        random.choice(FACTS),
+        random.choice(PSYCHOLOGY),
+        random.choice(REVEALS),
+        random.choice(LOOPS)
+    ]
+
+def engine_philosophical():
+    return [
+        random.choice(HOOKS),
+        random.choice(OBSERVATIONS),
+        random.choice(PSYCHOLOGY),
+        random.choice(FACTS),
+        random.choice(REVEALS),
+        random.choice(LOOPS)
+    ]
+
+ENGINES = [
+    engine_story_arc,
+    engine_contrast,
+    engine_confession,
+    engine_fact_chain,
+    engine_philosophical
+]
+
+# =====================================================
+# UTILS
+# =====================================================
+
+def clean(text):
+    return text.replace("  ", " ").strip()
+
+def script_hash(text):
+    return hashlib.md5(text.encode()).hexdigest()
+
+# =====================================================
+# BUILD SCRIPT WITH RETRIES
+# =====================================================
+
+def build_script():
+    engine = random.choice(ENGINES)
+    lines = engine()
+
+    if random.random() < 0.35:
+        lines.insert(0, random.choice(CTA_SOFT))
+
+    script = " ".join(lines)
+    return clean(script)
+
+attempts = 0
+final_script = build_script()
+h = script_hash(final_script)
+
+while h in used and attempts < 25:
+    final_script = build_script()
+    h = script_hash(final_script)
+    attempts += 1
+
+used.add(h)
+
+json.dump(list(used), open(USED_FILE, "w"), indent=2)
+
+# =====================================================
+# SAVE
+# =====================================================
+
+with open("script.txt", "w", encoding="utf-8") as f:
+    f.write(final_script)
+
+print("✅ Procedural AI Script Generated")
+print(final_script)
