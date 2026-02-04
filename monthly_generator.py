@@ -3,7 +3,7 @@ import os, json, requests, re
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 LIB_FILE = "script_library.json"
 
-MIN_SCRIPTS = 80
+MIN_SCRIPTS = 20
 TARGET_SCRIPTS = 120
 
 # -----------------------------
