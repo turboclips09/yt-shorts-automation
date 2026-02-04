@@ -120,7 +120,7 @@ def valid_script(s):
     if words < 110 or words > 160:
         return False
 
-    if sentences < 6:
+    if sentences < 5:
         return False
 
     if "you won't believe" in s.lower() and words < 120:
@@ -156,28 +156,40 @@ def call_model(model):
 # -----------------------------
 # Generate Scripts
 # -----------------------------
+
 print("Refilling script library...")
 
 collected = []
 
+ROUNDS_PER_MODEL = 4   # how many times we ask each model
+
 for model in MODELS:
-    print("Trying model:", model)
-    text = call_model(model)
-    if not text:
-        continue
+    print("Using model:", model)
 
-    items = extract_json(text)
-    if not items:
-        continue
+    for r in range(ROUNDS_PER_MODEL):
+        print(" Round", r+1)
 
-    for obj in items:
-        if "script" in obj and valid_script(obj["script"]):
-            collected.append(obj)
+        text = call_model(model)
+        if not text:
+            continue
+
+        items = extract_json(text)
+        if not items:
+            continue
+
+        for obj in items:
+            if "script" in obj and valid_script(obj["script"]):
+                collected.append(obj)
+
+            if len(collected) >= TARGET_SCRIPTS:
+                break
+
         if len(collected) >= TARGET_SCRIPTS:
             break
 
     if len(collected) >= TARGET_SCRIPTS:
         break
+
 
 if not collected:
     print("Failed to collect valid scripts.")
