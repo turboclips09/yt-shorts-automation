@@ -1,4 +1,4 @@
-import os, json, requests
+import os, json, requests, time
 
 HF_TOKEN = os.getenv("HF_TOKEN")
 MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
@@ -8,10 +8,10 @@ brain = json.load(open("brain.json"))
 def top(bucket):
     return sorted(bucket.items(), key=lambda x:x[1], reverse=True)[:4]
 
-hooks = top(brain["hooks"])
-angles = top(brain["angles"])
-topics = top(brain["topics"])
-niches = top(brain["niches"])
+hooks = top(brain.get("hooks",{}))
+angles = top(brain.get("angles",{}))
+topics = top(brain.get("topics",{}))
+niches = top(brain.get("niches",{"cars":1.0}))
 
 prompt = f"""
 You are an autonomous YouTube Shorts script engine.
@@ -28,7 +28,7 @@ Each object:
  "topic": "driving_feel | car_psychology | engineering_truth | nostalgia"
 }}
 
-Primary Niches To Generate:
+Primary Niches:
 {niches}
 
 High Performing Hooks:
@@ -40,15 +40,14 @@ High Performing Angles:
 High Performing Topics:
 {topics}
 
-Instructions:
-- Avoid saturated patterns
-- Favor high performing ones
-- 20% experimental scripts
-- Strong curiosity endings
+Rules:
+- Strong hook first sentence
+- Curiosity ending
 - No emojis
 - No hashtags
 - No titles
-- One paragraph
+- One paragraph only
+- 20% experimental ideas
 
 Return ONLY JSON array.
 """
@@ -57,23 +56,50 @@ headers = {"Authorization": f"Bearer {HF_TOKEN}"}
 
 payload = {
     "inputs": prompt,
-    "parameters": {"max_new_tokens":4000,"temperature":0.9}
+    "parameters": {
+        "max_new_tokens": 3500,
+        "temperature": 0.9
+    }
 }
+
+print("Generating monthly script library...")
 
 r = requests.post(
     f"https://api-inference.huggingface.co/models/{MODEL}",
     headers=headers,
     json=payload,
-    timeout=120
+    timeout=180
 )
 
-text = r.json()[0]["generated_text"]
-scripts = json.loads(text[text.find("["):])
+data = r.json()
+
+# -------- HANDLE HF RESPONSES --------
+
+if isinstance(data, dict) and "error" in data:
+    print("HF Error:", data["error"])
+    exit(0)
+
+if not isinstance(data, list):
+    print("Unexpected response:", data)
+    exit(0)
+
+if "generated_text" not in data[0]:
+    print("Missing generated_text:", data)
+    exit(0)
+
+text = data[0]["generated_text"]
+
+# ------------------------------------
+
+json_start = text.find("[")
+json_text = text[json_start:]
+
+scripts = json.loads(json_text)
 
 json.dump(
-    {"unused":scripts,"used":[]},
+    {"unused": scripts, "used": []},
     open("script_library.json","w"),
     indent=2
 )
 
-print("Saved",len(scripts),"scripts")
+print("Saved", len(scripts), "scripts")
