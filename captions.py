@@ -1,59 +1,42 @@
-import re
-import subprocess
-import math
+import textwrap
 
-# -------------------------------
-# READ SCRIPT
-# -------------------------------
-text = open("script.txt", "r", encoding="utf-8").read().strip()
+text = open("script.txt","r",encoding="utf-8").read()
 
-# Split into phrases by punctuation
-phrases = re.split(r"[,.!?]", text)
-phrases = [p.strip() for p in phrases if len(p.strip().split()) >= 2]
+# Short lines for punch
+lines = textwrap.wrap(text, 22)
 
-# -------------------------------
-# GET AUDIO DURATION
-# -------------------------------
-probe = subprocess.run(
-    ["ffprobe", "-v", "error", "-show_entries", "format=duration",
-     "-of", "default=noprint_wrappers=1:nokey=1", "voice.mp3"],
-    capture_output=True, text=True
-)
-
-duration = float(probe.stdout.strip())
-
-# -------------------------------
-# TIMING LOGIC
-# -------------------------------
-time_per_phrase = duration / len(phrases)
-
-def ts(t):
-    m = int(t // 60)
-    s = t % 60
-    return f"0:{m:02d}:{s:05.2f}"
-
-# -------------------------------
-# ASS FILE
-# -------------------------------
-ass = """[Script Info]
-ScriptType: v4.00+
+header = """[Script Info]
 PlayResX: 1080
 PlayResY: 1920
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Alignment, MarginV
-Style: Default,Poppins,96,&H00FFFFFF,&H00000000,&H64000000,1,2,220
+Style: Default,Poppins,60,&H00FFFFFF,&H00000000,&H00000000,1,5,120
 
 [Events]
 Format: Layer, Start, End, Style, Text
 """
 
-t = 0.0
-for p in phrases:
-    start = ts(t)
-    end = ts(t + time_per_phrase)
-    ass += f"Dialogue: 0,{start},{end},Default,{p.upper()}\n"
-    t += time_per_phrase
+def t(sec):
+    return f"0:00:{sec:05.2f}"
 
-open("captions.ass", "w", encoding="utf-8").write(ass)
-print("✅ Captions generated (phrase-synced)")
+events=[]
+start=0
+
+for i,line in enumerate(lines):
+
+    # Faster hook, slower ending
+    if i < 3:
+        dur = 0.55
+    elif i > len(lines)-4:
+        dur = 0.9
+    else:
+        dur = 0.7
+
+    end=start+dur
+    events.append(
+        f"Dialogue:0,{t(start)},{t(end)},Default,{line}"
+    )
+    start=end
+
+open("captions.ass","w",encoding="utf-8").write(header+"\n".join(events))
