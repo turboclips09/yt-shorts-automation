@@ -1,7 +1,25 @@
 import os, json, requests, re
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
+LIB_FILE = "script_library.json"
 
+MIN_SCRIPTS = 80
+TARGET_SCRIPTS = 120
+
+# -----------------------------
+# Skip refill if library healthy
+# -----------------------------
+if os.path.exists(LIB_FILE):
+    lib = json.load(open(LIB_FILE))
+    if len(lib.get("unused", [])) >= MIN_SCRIPTS:
+        print("Library has enough scripts. Skipping monthly refill.")
+        exit(0)
+else:
+    lib = {"unused": [], "used": []}
+
+# -----------------------------
+# Free Models (fallback order)
+# -----------------------------
 MODELS = [
     "meta-llama/llama-3.1-8b-instruct",
     "mistralai/mistral-7b-instruct",
@@ -12,64 +30,115 @@ MODELS = [
 brain = json.load(open("brain.json"))
 
 def top(bucket):
-    return sorted(bucket.items(), key=lambda x:x[1], reverse=True)[:4]
+    return sorted(bucket.items(), key=lambda x: x[1], reverse=True)[:4]
 
 hooks = top(brain.get("hooks", {}))
 angles = top(brain.get("angles", {}))
 topics = top(brain.get("topics", {}))
 niches = top(brain.get("niches", {"cars":1.0}))
 
-prompt = f"""
-You are an autonomous YouTube Shorts script engine.
+# -----------------------------
+# PROMPT
+# -----------------------------
+PROMPT = f"""
+Generate YouTube Shorts SCRIPTS using these proportions:
 
-Generate 120 JSON objects.
+- 30% psychology_story
+- 25% fact_episode
+- 20% incident_story
+- 15% brand_story
+- 10% engineering_story
 
-Each object must be:
+Each script must:
+
+- 110 to 150 words
+- 6 to 9 sentences
+- Include a small real-life story OR scenario
+- Include at least one real car fact or engineering truth
+- Include psychology or emotional insight
+- Strong hook in first sentence
+- Clear buildup and climax
+- Curiosity-driven ending
+- No emojis
+- No hashtags
+- One paragraph only
+
+Return JSON array of objects:
 
 {{
- "script": "45-65 word YouTube Shorts script",
+ "script": "...",
+ "format": "fact_episode | incident_story | brand_story | psychology_story | engineering_story",
  "hook": "curiosity_gap | contrarian | identity | nostalgia",
  "angle": "manual_vs_auto | old_vs_new | electric | supercar | daily_driving",
  "engine": "story | contrast | reveal",
  "topic": "driving_feel | car_psychology | engineering_truth | nostalgia"
 }}
 
-Return ONLY JSON array.
+High Performing Hooks:
+{hooks}
+
+High Performing Angles:
+{angles}
+
+High Performing Topics:
+{topics}
+
+When appropriate, include:
+- Real people
+- Real brands
+- Real companies
+- Real incidents
+- Real models
+
+Return ONLY JSON.
 """
 
-headers = {
+HEADERS = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
 }
 
+# -----------------------------
+# Helpers
+# -----------------------------
 def extract_json(text):
     match = re.search(r"\[[\s\S]*\]", text)
     if not match:
         return None
     block = match.group(0)
-
-    # Remove trailing commas before ]
     block = re.sub(r",\s*\]", "]", block)
-
-    # Remove trailing commas before }
     block = re.sub(r",\s*\}", "}", block)
-
     try:
         return json.loads(block)
     except:
         return None
 
+def valid_script(s):
+    words = len(s.split())
+    sentences = len(re.findall(r"[.!?]", s))
+
+    if words < 110 or words > 160:
+        return False
+
+    if sentences < 6:
+        return False
+
+    if "you won't believe" in s.lower() and words < 120:
+        return False
+
+    return True
+
 def call_model(model):
     payload = {
         "model": model,
-        "messages": [{"role": "user", "content": prompt}],
+        "messages": [{"role": "user", "content": PROMPT}],
         "temperature": 0.9
     }
 
     try:
         r = requests.post(
             "https://openrouter.ai/api/v1/chat/completions",
-            headers=headers,
+            headers=HEADERS,
             json=payload,
             timeout=180
         )
@@ -80,32 +149,42 @@ def call_model(model):
         return None
 
     try:
-        data = r.json()
-        return data["choices"][0]["message"]["content"]
+        return r.json()["choices"][0]["message"]["content"]
     except:
         return None
 
-print("Generating monthly script library...")
+# -----------------------------
+# Generate Scripts
+# -----------------------------
+print("Refilling script library...")
 
-scripts = None
+collected = []
 
-for m in MODELS:
-    print("Trying model:", m)
-    text = call_model(m)
+for model in MODELS:
+    print("Trying model:", model)
+    text = call_model(model)
     if not text:
         continue
-    scripts = extract_json(text)
-    if scripts:
+
+    items = extract_json(text)
+    if not items:
+        continue
+
+    for obj in items:
+        if "script" in obj and valid_script(obj["script"]):
+            collected.append(obj)
+        if len(collected) >= TARGET_SCRIPTS:
+            break
+
+    if len(collected) >= TARGET_SCRIPTS:
         break
 
-if not scripts:
-    print("Failed to obtain valid JSON scripts")
+if not collected:
+    print("Failed to collect valid scripts.")
     exit(0)
 
-json.dump(
-    {"unused": scripts, "used": []},
-    open("script_library.json","w"),
-    indent=2
-)
+lib["unused"].extend(collected)
 
-print("Saved", len(scripts), "scripts")
+json.dump(lib, open(LIB_FILE,"w"), indent=2)
+
+print("Added", len(collected), "high-quality scripts")
