@@ -1,4 +1,4 @@
-import os, json, requests
+import os, json, requests, re
 
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 
@@ -12,7 +12,7 @@ MODELS = [
 brain = json.load(open("brain.json"))
 
 def top(bucket):
-    return sorted(bucket.items(), key=lambda x: x[1], reverse=True)[:4]
+    return sorted(bucket.items(), key=lambda x:x[1], reverse=True)[:4]
 
 hooks = top(brain.get("hooks", {}))
 angles = top(brain.get("angles", {}))
@@ -34,27 +34,6 @@ Each object must be:
  "topic": "driving_feel | car_psychology | engineering_truth | nostalgia"
 }}
 
-Primary Niches:
-{niches}
-
-High Performing Hooks:
-{hooks}
-
-High Performing Angles:
-{angles}
-
-High Performing Topics:
-{topics}
-
-Rules:
-- Strong hook first sentence
-- Curiosity ending
-- No emojis
-- No hashtags
-- No titles
-- One paragraph only
-- 20% experimental ideas
-
 Return ONLY JSON array.
 """
 
@@ -62,6 +41,23 @@ headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json"
 }
+
+def extract_json(text):
+    match = re.search(r"\[[\s\S]*\]", text)
+    if not match:
+        return None
+    block = match.group(0)
+
+    # Remove trailing commas before ]
+    block = re.sub(r",\s*\]", "]", block)
+
+    # Remove trailing commas before }
+    block = re.sub(r",\s*\}", "}", block)
+
+    try:
+        return json.loads(block)
+    except:
+        return None
 
 def call_model(model):
     payload = {
@@ -77,12 +73,10 @@ def call_model(model):
             json=payload,
             timeout=180
         )
-    except Exception as e:
-        print("Request failed:", e)
+    except:
         return None
 
     if r.status_code != 200:
-        print("Model", model, "HTTP", r.status_code)
         return None
 
     try:
@@ -91,27 +85,22 @@ def call_model(model):
     except:
         return None
 
-
 print("Generating monthly script library...")
 
-text = None
+scripts = None
+
 for m in MODELS:
     print("Trying model:", m)
     text = call_model(m)
-    if text:
+    if not text:
+        continue
+    scripts = extract_json(text)
+    if scripts:
         break
 
-if not text:
-    print("All models failed. Skipping monthly generation.")
+if not scripts:
+    print("Failed to obtain valid JSON scripts")
     exit(0)
-
-start = text.find("[")
-if start == -1:
-    print("JSON not found in model output")
-    print(text[:300])
-    exit(0)
-
-scripts = json.loads(text[start:])
 
 json.dump(
     {"unused": scripts, "used": []},
