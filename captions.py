@@ -4,7 +4,7 @@ import subprocess as sp
 # Read script
 text = open("script.txt","r",encoding="utf-8").read()
 
-# Get voice duration
+# Get real voice duration
 dur = float(sp.run([
     "ffprobe","-v","error",
     "-show_entries","format=duration",
@@ -12,8 +12,8 @@ dur = float(sp.run([
     "voice.mp3"
 ], capture_output=True, text=True).stdout.strip())
 
-# Break into punchy short lines
-lines = textwrap.wrap(text, 20)
+# Shorter lines for fast speech
+lines = textwrap.wrap(text, 16)
 
 total_chars = sum(len(l) for l in lines)
 
@@ -22,8 +22,9 @@ PlayResX: 1080
 PlayResY: 1920
 
 [V4+ Styles]
-Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Alignment, MarginV
-Style: Default,Poppins,60,&H00FFFFFF,&H00000000,&H00000000,1,5,120
+Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold, Alignment, MarginV, Outline, Shadow
+
+Style: Default,Poppins,78,&H00FFFFFF,&H00000000,&H00000000,1,5,150,4,1
 
 [Events]
 Format: Layer, Start, End, Style, Text
@@ -38,6 +39,11 @@ start=0
 for line in lines:
     proportion = len(line) / total_chars
     line_duration = dur * proportion
+
+    # minimum duration safeguard for readability
+    if line_duration < 0.35:
+        line_duration = 0.35
+
     end = start + line_duration
 
     events.append(
@@ -46,10 +52,9 @@ for line in lines:
 
     start = end
 
-# Force last caption to end exactly at audio duration
+# Force final caption to end exactly with audio
 if events:
-    last = events[-1]
-    parts = last.split(",")
+    parts = events[-1].split(",")
     parts[2] = t(dur)
     events[-1] = ",".join(parts)
 
