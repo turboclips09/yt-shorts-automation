@@ -7,8 +7,8 @@ TEXT = pathlib.Path("script.txt").read_text(encoding="utf-8").strip()
 VOICE = "en-US-GuyNeural"
 
 # Faster but still natural
-RATE = "+14%"
-PITCH = "+3Hz"
+RATE = "+20%"
+PITCH = "+5Hz"
 
 async def main():
     communicate = edge_tts.Communicate(
