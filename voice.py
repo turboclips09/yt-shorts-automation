@@ -5,8 +5,10 @@ import pathlib
 TEXT = pathlib.Path("script.txt").read_text(encoding="utf-8").strip()
 
 VOICE = "en-US-GuyNeural"
-RATE = "+8%"
-PITCH = "+2Hz"
+
+# Faster but still natural
+RATE = "+14%"
+PITCH = "+3Hz"
 
 async def main():
     communicate = edge_tts.Communicate(
@@ -30,5 +32,6 @@ async def main():
             f.write(chunk)
 
     print("✅ voice.mp3 generated successfully")
+    print(f"Voice settings → Rate: {RATE}, Pitch: {PITCH}")
 
 asyncio.run(main())
