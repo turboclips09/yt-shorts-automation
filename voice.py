@@ -20,29 +20,30 @@ async def main():
     audio_chunks = []
     word_timings = []
 
-    async for event in communicate.stream():
-        if event["type"] == "audio":
-            audio_chunks.append(event["data"])
+    async for chunk in communicate.stream():
+        if chunk["type"] == "audio":
+            audio_chunks.append(chunk["data"])
 
-        if event["type"] == "WordBoundary":
+        if chunk["type"] == "WordBoundary":
             word_timings.append({
-                "word": event["text"],
-                "start": event["offset"] / 10_000_000,
-                "duration": event["duration"] / 10_000_000
+                "word": chunk["text"],
+                "start": chunk["offset"] / 10_000_000,
+                "end": (chunk["offset"] + chunk["duration"]) / 10_000_000
             })
 
     if not audio_chunks:
         raise RuntimeError("❌ No audio received")
 
     with open("voice.mp3", "wb") as f:
-        for chunk in audio_chunks:
-            f.write(chunk)
+        for audio in audio_chunks:
+            f.write(audio)
 
-    # Save word timing
-    with open("word_timings.json", "w") as f:
-        json.dump(word_timings, f, indent=2)
+    if not word_timings:
+        print("⚠ No word timings received — falling back to proportional timing")
+    else:
+        with open("word_timings.json", "w") as f:
+            json.dump(word_timings, f, indent=2)
 
     print("✅ voice.mp3 generated")
-    print("✅ word_timings.json generated")
 
 asyncio.run(main())
