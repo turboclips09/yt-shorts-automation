@@ -1,45 +1,18 @@
 import json
+import subprocess as sp
+import os
+import textwrap
 
-# Load word timing
-with open("word_timings.json") as f:
-    words = json.load(f)
+def t(sec):
+    return f"0:00:{sec:05.2f}"
 
-if not words:
-    raise RuntimeError("No word timings found")
+# Check if word timings exist
+if os.path.exists("word_timings.json"):
+    with open("word_timings.json") as f:
+        words = json.load(f)
+else:
+    words = []
 
-# Group words into short punchy caption chunks
-chunks = []
-current_chunk = []
-current_start = None
-
-MAX_WORDS_PER_CHUNK = 4  # small chunks for TikTok energy
-
-for w in words:
-    if current_start is None:
-        current_start = w["start"]
-
-    current_chunk.append(w["word"])
-
-    if len(current_chunk) >= MAX_WORDS_PER_CHUNK:
-        end_time = w["start"] + w["duration"]
-        chunks.append({
-            "text": " ".join(current_chunk),
-            "start": current_start,
-            "end": end_time
-        })
-        current_chunk = []
-        current_start = None
-
-# Add leftover words
-if current_chunk:
-    end_time = words[-1]["start"] + words[-1]["duration"]
-    chunks.append({
-        "text": " ".join(current_chunk),
-        "start": current_start,
-        "end": end_time
-    })
-
-# ASS header
 header = """[Script Info]
 PlayResX: 1080
 PlayResY: 1920
@@ -55,22 +28,85 @@ Style: Climax,Poppins,88,&H00FFFFFF,&H00000000,&H00000000,1,5,160,5,1
 Format: Layer, Start, End, Style, Text
 """
 
-def t(sec):
-    return f"0:00:{sec:05.2f}"
-
 events=[]
 
-for i, chunk in enumerate(chunks):
+# ---------------------------------------------------
+# CASE 1: True word timing available
+# ---------------------------------------------------
+if words:
 
-    if i < 2:
-        style = "Hook"
-    elif i >= len(chunks) - 2:
-        style = "Climax"
-    else:
+    MAX_WORDS_PER_CHUNK = 4
+    chunk = []
+    start_time = None
+
+    for i, w in enumerate(words):
+
+        if start_time is None:
+            start_time = w["start"]
+
+        chunk.append(w["word"])
+
+        if len(chunk) >= MAX_WORDS_PER_CHUNK:
+            end_time = w["end"]
+
+            style = "Normal"
+            if len(events) < 2:
+                style = "Hook"
+
+            events.append(
+                f"Dialogue:0,{t(start_time)},{t(end_time)},{style},{' '.join(chunk)}"
+            )
+
+            chunk = []
+            start_time = None
+
+    # Handle remainder
+    if chunk:
+        end_time = words[-1]["end"]
+        events.append(
+            f"Dialogue:0,{t(start_time)},{t(end_time)},Climax,{' '.join(chunk)}"
+        )
+
+# ---------------------------------------------------
+# CASE 2: Fallback (proportional timing)
+# ---------------------------------------------------
+else:
+    print("⚠ Using fallback caption timing")
+
+    text = open("script.txt","r",encoding="utf-8").read()
+
+    dur = float(sp.run([
+        "ffprobe","-v","error",
+        "-show_entries","format=duration",
+        "-of","default=noprint_wrappers=1:nokey=1",
+        "voice.mp3"
+    ], capture_output=True, text=True).stdout.strip())
+
+    lines = textwrap.wrap(text, 14)
+    total_chars = sum(len(l) for l in lines)
+
+    start = 0
+    for i, line in enumerate(lines):
+        proportion = len(line) / total_chars
+        line_duration = dur * proportion
+
+        end = start + line_duration
+
         style = "Normal"
+        if i < 2:
+            style = "Hook"
+        elif i >= len(lines) - 2:
+            style = "Climax"
 
-    events.append(
-        f"Dialogue:0,{t(chunk['start'])},{t(chunk['end'])},{style},{chunk['text']}"
-    )
+        events.append(
+            f"Dialogue:0,{t(start)},{t(end)},{style},{line}"
+        )
+
+        start = end
+
+    if events:
+        parts = events[-1].split(",")
+        parts[2] = t(dur)
+        events[-1] = ",".join(parts)
 
 open("captions.ass","w",encoding="utf-8").write(header+"\n".join(events))
