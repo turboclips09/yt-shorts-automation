@@ -1,22 +1,45 @@
-import textwrap
-import subprocess as sp
+import json
 
-# Read script
-text = open("script.txt","r",encoding="utf-8").read()
+# Load word timing
+with open("word_timings.json") as f:
+    words = json.load(f)
 
-# Get voice duration
-dur = float(sp.run([
-    "ffprobe","-v","error",
-    "-show_entries","format=duration",
-    "-of","default=noprint_wrappers=1:nokey=1",
-    "voice.mp3"
-], capture_output=True, text=True).stdout.strip())
+if not words:
+    raise RuntimeError("No word timings found")
 
-# Aggressive short lines
-lines = textwrap.wrap(text, 14)
+# Group words into short punchy caption chunks
+chunks = []
+current_chunk = []
+current_start = None
 
-total_chars = sum(len(l) for l in lines)
+MAX_WORDS_PER_CHUNK = 4  # small chunks for TikTok energy
 
+for w in words:
+    if current_start is None:
+        current_start = w["start"]
+
+    current_chunk.append(w["word"])
+
+    if len(current_chunk) >= MAX_WORDS_PER_CHUNK:
+        end_time = w["start"] + w["duration"]
+        chunks.append({
+            "text": " ".join(current_chunk),
+            "start": current_start,
+            "end": end_time
+        })
+        current_chunk = []
+        current_start = None
+
+# Add leftover words
+if current_chunk:
+    end_time = words[-1]["start"] + words[-1]["duration"]
+    chunks.append({
+        "text": " ".join(current_chunk),
+        "start": current_start,
+        "end": end_time
+    })
+
+# ASS header
 header = """[Script Info]
 PlayResX: 1080
 PlayResY: 1920
@@ -36,40 +59,18 @@ def t(sec):
     return f"0:00:{sec:05.2f}"
 
 events=[]
-start=0
 
-for i, line in enumerate(lines):
+for i, chunk in enumerate(chunks):
 
-    proportion = len(line) / total_chars
-    line_duration = dur * proportion
-
-    # Minimum readable duration
-    if line_duration < 0.30:
-        line_duration = 0.30
-
-    # Hook style (first 2 lines)
     if i < 2:
         style = "Hook"
-        line_duration *= 1.15
-    # Climax (last 2 lines)
-    elif i >= len(lines) - 2:
+    elif i >= len(chunks) - 2:
         style = "Climax"
-        line_duration *= 1.20
     else:
         style = "Normal"
 
-    end = start + line_duration
-
     events.append(
-        f"Dialogue:0,{t(start)},{t(end)},{style},{line}"
+        f"Dialogue:0,{t(chunk['start'])},{t(chunk['end'])},{style},{chunk['text']}"
     )
-
-    start = end
-
-# Force final caption to match audio exactly
-if events:
-    parts = events[-1].split(",")
-    parts[2] = t(dur)
-    events[-1] = ",".join(parts)
 
 open("captions.ass","w",encoding="utf-8").write(header+"\n".join(events))
