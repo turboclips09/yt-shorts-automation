@@ -1,30 +1,36 @@
-import json, os, random
+import json
+import os
 
 LIB_FILE = "script_library.json"
-BRAIN_FILE = "brain.json"
+
+if not os.path.exists(LIB_FILE):
+    raise RuntimeError("❌ script_library.json not found")
 
 lib = json.load(open(LIB_FILE))
-brain = json.load(open(BRAIN_FILE))
 
-if not lib["unused"]:
-    print("Library empty")
-    exit()
+unused = lib.get("unused", [])
+used = lib.get("used", [])
 
-entry = lib["unused"].pop(0)
+if not unused:
+    raise RuntimeError("❌ No unused scripts available")
 
-script = entry["script"]
+# Take first script
+entry = unused.pop(0)
 
-meta = {
-    "hook": entry["hook"],
-    "angle": entry["angle"],
-    "engine": entry["engine"],
-    "topic": entry["topic"]
-}
+script_text = entry["script"]
 
-brain["last_meta"] = meta
+# Move to used
+used.append(entry)
 
-json.dump(lib, open(LIB_FILE,"w"), indent=2)
-json.dump(brain, open(BRAIN_FILE,"w"), indent=2)
+# Save updated library
+lib["unused"] = unused
+lib["used"] = used
 
-open("script.txt","w",encoding="utf-8").write(script)
-print(script)
+json.dump(lib, open(LIB_FILE, "w"), indent=2)
+
+# Write script.txt for pipeline
+with open("script.txt", "w", encoding="utf-8") as f:
+    f.write(script_text)
+
+print("✅ Script selected and saved to script.txt")
+print("Remaining unused scripts:", len(unused))
