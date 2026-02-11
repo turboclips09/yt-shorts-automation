@@ -3,23 +3,20 @@ import os, json, requests, re
 API_KEY = os.getenv("OPENROUTER_API_KEY")
 LIB_FILE = "script_library.json"
 
-MIN_SCRIPTS = 20
+MIN_SCRIPTS = 80
 TARGET_SCRIPTS = 120
 
 # -----------------------------
-# Skip refill if library healthy
+# Skip if enough scripts
 # -----------------------------
 if os.path.exists(LIB_FILE):
     lib = json.load(open(LIB_FILE))
     if len(lib.get("unused", [])) >= MIN_SCRIPTS:
-        print("Library has enough scripts. Skipping monthly refill.")
+        print("Library healthy. Skipping refill.")
         exit(0)
 else:
     lib = {"unused": [], "used": []}
 
-# -----------------------------
-# Free Models (fallback order)
-# -----------------------------
 MODELS = [
     "meta-llama/llama-3.1-8b-instruct",
     "mistralai/mistral-7b-instruct",
@@ -27,26 +24,12 @@ MODELS = [
     "gryphe/mythomax-l2-13b"
 ]
 
-brain = json.load(open("brain.json"))
-
-def top(bucket):
-    return sorted(bucket.items(), key=lambda x: x[1], reverse=True)[:4]
-
-hooks = top(brain.get("hooks", {}))
-angles = top(brain.get("angles", {}))
-topics = top(brain.get("topics", {}))
-niches = top(brain.get("niches", {"cars":1.0}))
-
-# -----------------------------
-# PROMPT
-# -----------------------------
-PROMPT = f"""
+PROMPT = """
 Generate YouTube Shorts scripts (40–50 seconds).
 
 Each script must:
-
-- 90 to 130 words
-- 5 to 8 sentences
+- 100–150 words
+- 5–8 sentences
 - Clear structure:
     Hook
     Story setup
@@ -54,34 +37,25 @@ Each script must:
     Conflict
     Climax
     Insight ending
-- Balanced mix of:
-    Brand rivalries
-    Corporate controversies
-    Engineering breakthroughs
-    Historical car events
-    Select real incidents (not only tragedies)
+- Include real brands, companies, models, executives or real incidents when relevant
+- Avoid focusing only on fatal crashes
+- One paragraph only
+- No emojis
+- No hashtags
 
-Avoid focusing only on fatal crashes.
+Content distribution:
+- 25% brand rivalries
+- 25% corporate controversies
+- 25% engineering or history stories
+- 15% psychology of driving
+- 10% real-life incidents
 
-Include real:
-- Company names
-- Executives
-- Models
-- Dates
-- Events
+Return ONLY a JSON array of objects:
 
-Return JSON array of objects:
-
-{{
+{
  "script": "...",
- "format": "brand_story | controversy_story | engineering_story | history_story | incident_story",
- "hook": "curiosity_gap | contrarian | identity | nostalgia",
- "angle": "corporate | rivalry | innovation | scandal | human_story",
- "engine": "story",
- "topic": "automotive"
-}}
-
-Return ONLY JSON.
+ "format": "brand_story | controversy_story | engineering_story | psychology_story | incident_story"
+}
 """
 
 HEADERS = {
@@ -89,9 +63,6 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
-# -----------------------------
-# Helpers
-# -----------------------------
 def extract_json(text):
     match = re.search(r"\[[\s\S]*\]", text)
     if not match:
@@ -107,23 +78,13 @@ def extract_json(text):
 def valid_script(s):
     words = len(s.split())
     sentences = len(re.findall(r"[.!?]", s))
-
-    if words < 90 or words > 130:
-        return False
-
-    if sentences < 5:
-        return False
-
-    if "you won't believe" in s.lower() and words < 120:
-        return False
-
-    return True
+    return 100 <= words <= 150 and sentences >= 5
 
 def call_model(model):
     payload = {
         "model": model,
         "messages": [{"role": "user", "content": PROMPT}],
-        "temperature": 0.9
+        "temperature": 0.85
     }
 
     try:
@@ -144,22 +105,14 @@ def call_model(model):
     except:
         return None
 
-# -----------------------------
-# Generate Scripts
-# -----------------------------
-
 print("Refilling script library...")
 
 collected = []
-
-ROUNDS_PER_MODEL = 4   # how many times we ask each model
+ROUNDS = 4
 
 for model in MODELS:
     print("Using model:", model)
-
-    for r in range(ROUNDS_PER_MODEL):
-        print(" Round", r+1)
-
+    for _ in range(ROUNDS):
         text = call_model(model)
         if not text:
             continue
@@ -181,9 +134,8 @@ for model in MODELS:
     if len(collected) >= TARGET_SCRIPTS:
         break
 
-
 if not collected:
-    print("Failed to collect valid scripts.")
+    print("No valid scripts collected.")
     exit(0)
 
 lib["unused"].extend(collected)
