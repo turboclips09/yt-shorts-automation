@@ -6,9 +6,9 @@ LIB_FILE = "script_library.json"
 MIN_SCRIPTS = 80
 TARGET_SCRIPTS = 120
 
-# -----------------------------
-# Skip if enough scripts
-# -----------------------------
+# ---------------------------------
+# Skip refill if enough scripts exist
+# ---------------------------------
 if os.path.exists(LIB_FILE):
     lib = json.load(open(LIB_FILE))
     if len(lib.get("unused", [])) >= MIN_SCRIPTS:
@@ -17,6 +17,9 @@ if os.path.exists(LIB_FILE):
 else:
     lib = {"unused": [], "used": []}
 
+# ---------------------------------
+# Models (fallback order)
+# ---------------------------------
 MODELS = [
     "meta-llama/llama-3.1-8b-instruct",
     "mistralai/mistral-7b-instruct",
@@ -24,33 +27,37 @@ MODELS = [
     "gryphe/mythomax-l2-13b"
 ]
 
+# ---------------------------------
+# PROMPT
+# ---------------------------------
 PROMPT = """
-Generate YouTube Shorts scripts (40–50 seconds).
+Generate YouTube Shorts scripts designed for 40–50 seconds runtime.
 
 Each script must:
-- 100–150 words
-- 5–8 sentences
-- Clear structure:
-    Hook
-    Story setup
-    Real fact
-    Conflict
-    Climax
-    Insight ending
-- Include real brands, companies, models, executives or real incidents when relevant
-- Avoid focusing only on fatal crashes
+
+- 120–160 words
+- 6–9 sentences
 - One paragraph only
+- Strong opening hook
+- Escalating narrative structure
+- Real names, brands, models, executives or real incidents when relevant
+- Specific details (dates, numbers, locations if applicable)
+- Clear emotional build-up
+- Strong climax moment
+- Reflective or thought-provoking final line
 - No emojis
 - No hashtags
 
 Content distribution:
 - 25% brand rivalries
-- 25% corporate controversies
-- 25% engineering or history stories
+- 25% corporate scandals or controversies
+- 25% engineering breakthroughs or automotive history
 - 15% psychology of driving
-- 10% real-life incidents
+- 10% real-life incidents (not only fatal crashes)
 
-Return ONLY a JSON array of objects:
+Avoid generic filler. Avoid one-sentence hooks. Avoid shallow summaries.
+
+Return ONLY a JSON array of objects in this format:
 
 {
  "script": "...",
@@ -63,6 +70,9 @@ HEADERS = {
     "Content-Type": "application/json"
 }
 
+# ---------------------------------
+# Helpers
+# ---------------------------------
 def extract_json(text):
     match = re.search(r"\[[\s\S]*\]", text)
     if not match:
@@ -78,7 +88,18 @@ def extract_json(text):
 def valid_script(s):
     words = len(s.split())
     sentences = len(re.findall(r"[.!?]", s))
-    return 100 <= words <= 150 and sentences >= 5
+
+    if not (120 <= words <= 160):
+        return False
+
+    if sentences < 6:
+        return False
+
+    # Reject shallow clickbait
+    if "you won't believe" in s.lower() and words < 130:
+        return False
+
+    return True
 
 def call_model(model):
     payload = {
@@ -105,14 +126,20 @@ def call_model(model):
     except:
         return None
 
+# ---------------------------------
+# Generation Loop
+# ---------------------------------
 print("Refilling script library...")
 
 collected = []
-ROUNDS = 4
+ROUNDS_PER_MODEL = 4
 
 for model in MODELS:
     print("Using model:", model)
-    for _ in range(ROUNDS):
+
+    for round_index in range(ROUNDS_PER_MODEL):
+        print(" Round", round_index + 1)
+
         text = call_model(model)
         if not text:
             continue
