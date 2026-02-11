@@ -41,54 +41,45 @@ niches = top(brain.get("niches", {"cars":1.0}))
 # PROMPT
 # -----------------------------
 PROMPT = f"""
-Generate YouTube Shorts SCRIPTS using these proportions:
-
-- 30% psychology_story
-- 25% fact_episode
-- 20% incident_story
-- 15% brand_story
-- 10% engineering_story
+Generate YouTube Shorts scripts (40–50 seconds).
 
 Each script must:
 
-- 110 to 150 words
-- 6 to 9 sentences
-- Include a small real-life story OR scenario
-- Include at least one real car fact or engineering truth
-- Include psychology or emotional insight
-- Strong hook in first sentence
-- Clear buildup and climax
-- Curiosity-driven ending
-- No emojis
-- No hashtags
-- One paragraph only
+- 90 to 130 words
+- 5 to 8 sentences
+- Clear structure:
+    Hook
+    Story setup
+    Real fact
+    Conflict
+    Climax
+    Insight ending
+- Balanced mix of:
+    Brand rivalries
+    Corporate controversies
+    Engineering breakthroughs
+    Historical car events
+    Select real incidents (not only tragedies)
+
+Avoid focusing only on fatal crashes.
+
+Include real:
+- Company names
+- Executives
+- Models
+- Dates
+- Events
 
 Return JSON array of objects:
 
 {{
  "script": "...",
- "format": "fact_episode | incident_story | brand_story | psychology_story | engineering_story",
+ "format": "brand_story | controversy_story | engineering_story | history_story | incident_story",
  "hook": "curiosity_gap | contrarian | identity | nostalgia",
- "angle": "manual_vs_auto | old_vs_new | electric | supercar | daily_driving",
- "engine": "story | contrast | reveal",
- "topic": "driving_feel | car_psychology | engineering_truth | nostalgia"
+ "angle": "corporate | rivalry | innovation | scandal | human_story",
+ "engine": "story",
+ "topic": "automotive"
 }}
-
-High Performing Hooks:
-{hooks}
-
-High Performing Angles:
-{angles}
-
-High Performing Topics:
-{topics}
-
-When appropriate, include:
-- Real people
-- Real brands
-- Real companies
-- Real incidents
-- Real models
 
 Return ONLY JSON.
 """
@@ -117,7 +108,7 @@ def valid_script(s):
     words = len(s.split())
     sentences = len(re.findall(r"[.!?]", s))
 
-    if words < 110 or words > 160:
+    if words < 90 or words > 130:
         return False
 
     if sentences < 5:
